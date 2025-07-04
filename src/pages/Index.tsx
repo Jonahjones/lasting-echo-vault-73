@@ -7,11 +7,13 @@ import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 
 export default function Index() {
-  const { user, profile } = useAuth();
+  const { user, profile, isLoading } = useAuth();
   const navigate = useNavigate();
   const [userStats, setUserStats] = useState({ total: 0, scheduled: 0, delivered: 0 });
   const [publicVideos, setPublicVideos] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+
+  console.log('Index component state:', { user: !!user, profile: !!profile, isLoading, loading });
 
   useEffect(() => {
     if (!user) {
@@ -22,7 +24,7 @@ export default function Index() {
   // Load user stats and public videos
   useEffect(() => {
     const loadDashboardData = async () => {
-      if (!user || !profile) {
+      if (!user) {
         setLoading(false);
         return;
       }
@@ -58,7 +60,21 @@ export default function Index() {
     };
 
     loadDashboardData();
-  }, [user, profile]);
+  }, [user]);
+
+  // Show auth loading state
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-gradient-comfort flex items-center justify-center">
+        <div className="text-center space-y-4">
+          <div className="w-12 h-12 bg-gradient-primary rounded-2xl flex items-center justify-center mx-auto shadow-gentle animate-pulse">
+            <Heart className="w-6 h-6 text-primary-foreground" />
+          </div>
+          <p className="text-muted-foreground">Loading your experience...</p>
+        </div>
+      </div>
+    );
+  }
 
   // Show loading state while data is loading
   if (loading) {
@@ -74,12 +90,20 @@ export default function Index() {
     );
   }
 
-  if (!user || !profile) {
+  // If no user, they'll be redirected to auth
+  if (!user) {
     return null;
   }
 
+  // If user exists but no profile, show basic dashboard
+  const displayProfile = profile || {
+    first_name: user.user_metadata?.name || user.email?.split('@')[0] || 'Friend',
+    tagline: null,
+    first_video_recorded: false
+  };
+
   const hasVideos = userStats.total > 0;
-  const isFirstTime = !profile.first_video_recorded;
+  const isFirstTime = !displayProfile.first_video_recorded;
 
   return (
     <div className="min-h-screen bg-gradient-comfort pb-20">
@@ -90,20 +114,20 @@ export default function Index() {
             <Heart className="w-8 h-8 text-primary-foreground" />
           </div>
           <h1 className="text-3xl font-serif font-light text-foreground mb-2">
-            Hello, {profile.first_name || 'Friend'} 👋
+            Hello, {displayProfile.first_name || 'Friend'} 👋
           </h1>
           <p className="text-lg text-muted-foreground font-medium">
             Your stories can last forever
           </p>
         </div>
 
-        {profile.tagline && (
+        {displayProfile.tagline && (
           <Card className="mb-8 bg-primary/5 border-primary/20 shadow-gentle">
             <CardContent className="pt-6">
               <div className="flex items-start space-x-3">
                 <MessageCircle className="w-5 h-5 text-primary mt-0.5 flex-shrink-0" />
                 <p className="text-sm font-medium text-foreground italic leading-relaxed">
-                  "{profile.tagline}"
+                  "{displayProfile.tagline}"
                 </p>
               </div>
             </CardContent>
