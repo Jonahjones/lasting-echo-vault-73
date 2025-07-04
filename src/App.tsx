@@ -69,6 +69,7 @@ function AppRoutes() {
       <Routes>
         <Route path="/" element={<Index />} />
         <Route path="/record" element={<Record />} />
+        <Route path="/video-details" element={<VideoDetails />} />
         <Route path="/contacts" element={<Contacts />} />
         <Route path="/library" element={<Library />} />
         <Route path="/profile" element={<Profile />} />
