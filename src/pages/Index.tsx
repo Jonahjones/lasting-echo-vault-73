@@ -22,7 +22,10 @@ export default function Index() {
   // Load user stats and public videos
   useEffect(() => {
     const loadDashboardData = async () => {
-      if (!user) return;
+      if (!user || !profile) {
+        setLoading(false);
+        return;
+      }
       
       try {
         // Load user video stats
@@ -55,7 +58,21 @@ export default function Index() {
     };
 
     loadDashboardData();
-  }, [user]);
+  }, [user, profile]);
+
+  // Show loading state while data is loading
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gradient-comfort flex items-center justify-center">
+        <div className="text-center space-y-4">
+          <div className="w-12 h-12 bg-gradient-primary rounded-2xl flex items-center justify-center mx-auto shadow-gentle animate-pulse">
+            <Heart className="w-6 h-6 text-primary-foreground" />
+          </div>
+          <p className="text-muted-foreground">Loading your dashboard...</p>
+        </div>
+      </div>
+    );
+  }
 
   if (!user || !profile) {
     return null;
