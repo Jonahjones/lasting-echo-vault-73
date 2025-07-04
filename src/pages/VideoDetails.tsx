@@ -123,24 +123,6 @@ export default function VideoDetails() {
       return;
     }
 
-    if (!deliveryDate) {
-      toast({
-        title: "Delivery Date Required", 
-        description: "Please select when this message should be delivered.",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    if (selectedContacts.length === 0) {
-      toast({
-        title: "Recipients Required",
-        description: "Please select at least one contact to share with.",
-        variant: "destructive",
-      });
-      return;
-    }
-
     setIsLoading(true);
 
     try {
@@ -156,12 +138,14 @@ export default function VideoDetails() {
         isPublic: false,
         category: "love",
         scheduledDeliveryDate: deliveryDate,
-        sharedWithContacts: selectedContacts
+        sharedWithContacts: selectedContacts.length > 0 ? selectedContacts : []
       });
 
       toast({
-        title: "Message Scheduled!",
-        description: `Your video message will be delivered on ${format(deliveryDate, "PPP")}.`,
+        title: "Message Saved!",
+        description: deliveryDate 
+          ? `Your video message will be delivered on ${format(deliveryDate, "PPP")}.`
+          : "Your video message has been saved to your library.",
       });
       
       navigate("/library");
@@ -281,9 +265,9 @@ export default function VideoDetails() {
         {/* Delivery Date */}
         <Card className="shadow-card">
           <CardHeader>
-            <CardTitle className="text-lg">Delivery Date</CardTitle>
+            <CardTitle className="text-lg">Delivery Date (Optional)</CardTitle>
             <CardDescription>
-              When should this message be delivered?
+              Schedule when this message should be delivered, or leave blank to save now
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -297,7 +281,7 @@ export default function VideoDetails() {
                   )}
                 >
                   <CalendarIcon className="mr-2 h-4 w-4" />
-                  {deliveryDate ? format(deliveryDate, "PPP") : "Select delivery date"}
+                  {deliveryDate ? format(deliveryDate, "PPP") : "Select delivery date (optional)"}
                 </Button>
               </PopoverTrigger>
               <PopoverContent className="w-auto p-0" align="start">
@@ -319,10 +303,10 @@ export default function VideoDetails() {
           <CardHeader>
             <CardTitle className="flex items-center space-x-2">
               <Users className="w-5 h-5 text-primary" />
-              <span>Share With</span>
+              <span>Share With (Optional)</span>
             </CardTitle>
             <CardDescription>
-              Choose trusted contacts to receive this message
+              Optionally choose trusted contacts to receive this message
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -409,11 +393,14 @@ export default function VideoDetails() {
               disabled={isLoading}
               className="w-[90%] h-12"
             >
-            {isLoading ? "Saving..." : "Schedule Message"}
+            {isLoading ? "Saving..." : deliveryDate ? "Schedule Message" : "Save Message"}
           </Button>
           
           <p className="text-xs text-center text-muted-foreground">
-            Your message will be securely stored and delivered on the selected date
+            {deliveryDate 
+              ? "Your message will be securely stored and delivered on the selected date"
+              : "Your message will be saved to your library"
+            }
           </p>
         </div>
       </div>
