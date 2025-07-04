@@ -12,99 +12,81 @@ export type Database = {
       profiles: {
         Row: {
           avatar_url: string | null
-          created_at: string
-          display_name: string | null
-          first_name: string | null
-          first_video_recorded: boolean | null
+          average_rating: number | null
+          bio: string | null
+          company: string | null
+          created_at: string | null
+          featured: string[] | null
+          full_name: string | null
           id: string
-          last_name: string | null
-          onboarding_completed: boolean | null
-          tagline: string | null
-          updated_at: string
-          user_id: string
+          is_onboarded: boolean | null
+          location: string | null
+          review_count: number | null
+          skills: string[] | null
+          social_links: Json | null
+          title: string | null
+          updated_at: string | null
+          website: string | null
         }
         Insert: {
           avatar_url?: string | null
-          created_at?: string
-          display_name?: string | null
-          first_name?: string | null
-          first_video_recorded?: boolean | null
-          id?: string
-          last_name?: string | null
-          onboarding_completed?: boolean | null
-          tagline?: string | null
-          updated_at?: string
-          user_id: string
+          average_rating?: number | null
+          bio?: string | null
+          company?: string | null
+          created_at?: string | null
+          featured?: string[] | null
+          full_name?: string | null
+          id: string
+          is_onboarded?: boolean | null
+          location?: string | null
+          review_count?: number | null
+          skills?: string[] | null
+          social_links?: Json | null
+          title?: string | null
+          updated_at?: string | null
+          website?: string | null
         }
         Update: {
           avatar_url?: string | null
-          created_at?: string
-          display_name?: string | null
-          first_name?: string | null
-          first_video_recorded?: boolean | null
+          average_rating?: number | null
+          bio?: string | null
+          company?: string | null
+          created_at?: string | null
+          featured?: string[] | null
+          full_name?: string | null
           id?: string
-          last_name?: string | null
-          onboarding_completed?: boolean | null
-          tagline?: string | null
-          updated_at?: string
-          user_id?: string
+          is_onboarded?: boolean | null
+          location?: string | null
+          review_count?: number | null
+          skills?: string[] | null
+          social_links?: Json | null
+          title?: string | null
+          updated_at?: string | null
+          website?: string | null
         }
         Relationships: []
       }
-      videos: {
+      survey_responses: {
         Row: {
-          category: string | null
           created_at: string
-          description: string | null
-          duration: string | null
-          file_path: string
-          file_size: number | null
+          email: string
           id: string
-          is_public: boolean | null
-          mime_type: string | null
-          prompt: string | null
-          scheduled_delivery_date: string | null
-          shared_with_contacts: string[] | null
-          thumbnail_path: string | null
-          title: string
-          updated_at: string
-          user_id: string
+          response: string
+          user_id: string | null
         }
         Insert: {
-          category?: string | null
           created_at?: string
-          description?: string | null
-          duration?: string | null
-          file_path: string
-          file_size?: number | null
+          email: string
           id?: string
-          is_public?: boolean | null
-          mime_type?: string | null
-          prompt?: string | null
-          scheduled_delivery_date?: string | null
-          shared_with_contacts?: string[] | null
-          thumbnail_path?: string | null
-          title: string
-          updated_at?: string
-          user_id: string
+          response: string
+          user_id?: string | null
         }
         Update: {
-          category?: string | null
           created_at?: string
-          description?: string | null
-          duration?: string | null
-          file_path?: string
-          file_size?: number | null
+          email?: string
           id?: string
-          is_public?: boolean | null
-          mime_type?: string | null
-          prompt?: string | null
-          scheduled_delivery_date?: string | null
-          shared_with_contacts?: string[] | null
-          thumbnail_path?: string | null
-          title?: string
-          updated_at?: string
-          user_id?: string
+          response?: string
+          user_id?: string | null
         }
         Relationships: []
       }
