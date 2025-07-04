@@ -9,7 +9,102 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      [_ in never]: never
+      profiles: {
+        Row: {
+          avatar_url: string | null
+          created_at: string
+          display_name: string | null
+          first_name: string | null
+          first_video_recorded: boolean
+          id: string
+          last_name: string | null
+          onboarding_completed: boolean
+          tagline: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          avatar_url?: string | null
+          created_at?: string
+          display_name?: string | null
+          first_name?: string | null
+          first_video_recorded?: boolean
+          id?: string
+          last_name?: string | null
+          onboarding_completed?: boolean
+          tagline?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          avatar_url?: string | null
+          created_at?: string
+          display_name?: string | null
+          first_name?: string | null
+          first_video_recorded?: boolean
+          id?: string
+          last_name?: string | null
+          onboarding_completed?: boolean
+          tagline?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      videos: {
+        Row: {
+          category: string | null
+          created_at: string
+          description: string | null
+          duration: string | null
+          file_path: string | null
+          file_size: number | null
+          id: string
+          is_public: boolean
+          mime_type: string | null
+          prompt: string | null
+          scheduled_delivery_date: string | null
+          shared_with_contacts: string[] | null
+          title: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          category?: string | null
+          created_at?: string
+          description?: string | null
+          duration?: string | null
+          file_path?: string | null
+          file_size?: number | null
+          id?: string
+          is_public?: boolean
+          mime_type?: string | null
+          prompt?: string | null
+          scheduled_delivery_date?: string | null
+          shared_with_contacts?: string[] | null
+          title: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          category?: string | null
+          created_at?: string
+          description?: string | null
+          duration?: string | null
+          file_path?: string | null
+          file_size?: number | null
+          id?: string
+          is_public?: boolean
+          mime_type?: string | null
+          prompt?: string | null
+          scheduled_delivery_date?: string | null
+          shared_with_contacts?: string[] | null
+          title?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
