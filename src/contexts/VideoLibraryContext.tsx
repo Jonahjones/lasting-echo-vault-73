@@ -66,14 +66,8 @@ export function VideoLibraryProvider({ children }: { children: React.ReactNode }
             .from('videos')
             .createSignedUrl(video.file_path, 3600); // 1 hour expiry
 
-          // Get signed URL for thumbnail if it exists
+          // Thumbnail URL would be generated here if thumbnail_path existed
           let thumbnailUrl;
-          if (video.thumbnail_path) {
-            const { data: thumbUrl } = await supabase.storage
-              .from('videos')
-              .createSignedUrl(video.thumbnail_path, 3600);
-            thumbnailUrl = thumbUrl?.signedUrl;
-          }
 
           return {
             id: video.id,
@@ -210,7 +204,7 @@ export function VideoLibraryProvider({ children }: { children: React.ReactNode }
       // Get video record to find file path
       const { data: videoRecord, error: fetchError } = await supabase
         .from('videos')
-        .select('file_path, thumbnail_path')
+        .select('file_path')
         .eq('id', id)
         .eq('user_id', user.id)
         .single();
@@ -224,15 +218,6 @@ export function VideoLibraryProvider({ children }: { children: React.ReactNode }
           .remove([videoRecord.file_path]);
         
         if (deleteFileError) console.error('Error deleting video file:', deleteFileError);
-      }
-
-      // Delete thumbnail file if exists
-      if (videoRecord.thumbnail_path) {
-        const { error: deleteThumbError } = await supabase.storage
-          .from('videos')
-          .remove([videoRecord.thumbnail_path]);
-        
-        if (deleteThumbError) console.error('Error deleting thumbnail:', deleteThumbError);
       }
 
       // Delete video record from database
