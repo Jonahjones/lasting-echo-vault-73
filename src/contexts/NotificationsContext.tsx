@@ -181,14 +181,62 @@ export function NotificationsProvider({ children }: { children: ReactNode }) {
     if (!user) return;
 
     try {
-      // Get a random daily prompt for the second video
-      const { data: promptData, error: promptError } = await supabase
-        .from('daily_prompts')
-        .select('*')
-        .eq('date', new Date().toISOString().split('T')[0])
-        .maybeSingle();
+      // Array of meaningful prompts for second video notifications
+      const promptOptions = [
+        "Share a favorite story from your childhood that still makes you smile.",
+        "Describe a family tradition you hope will be passed down forever.",
+        "What is the best lesson you learned from your parents or grandparents?",
+        "What advice would you give your younger self if you could?",
+        "Tell the story of how you met your closest friend.",
+        "What was the proudest moment of your life?",
+        "Share a funny or embarrassing moment from your school years.",
+        "What challenge in life taught you the most?",
+        "Describe the day you became a parent.",
+        "What dream do you still hope to achieve or wish you had pursued?",
+        "Tell us about a family holiday or vacation you'll always remember.",
+        "What's your favorite family recipe, and what memories are connected to it?",
+        "Share a story about your favorite pet or animal companion.",
+        "Describe the bravest thing you've ever done.",
+        "What does happiness look like to you?",
+        "Tell about a time you felt scared and what helped you through it.",
+        "Who has had the biggest impact on your life, and why?",
+        "Share a lesson you learned from making a mistake.",
+        "What's the kindest thing someone ever did for you?",
+        "What is a habit or routine that made your life better?",
+        "Tell the story of your first job and what you learned from it.",
+        "What advice would you give about friendship?",
+        "What does love mean to you?",
+        "Share a memory from a special family celebration.",
+        "What is your favorite memory with your children or grandchildren?",
+        "Tell about a tradition you started in your own family.",
+        "What do you hope your children or grandchildren learn from you?",
+        "What is the best piece of advice you ever received?",
+        "What makes your family unique?",
+        "Describe a time you overcame a fear.",
+        "Share a moment when you laughed until you cried.",
+        "What's a place that feels like home to you?",
+        "Tell a story about an important teacher or mentor.",
+        "Share a moment that changed your life.",
+        "What are you most grateful for right now?",
+        "What do you hope your legacy will be?",
+        "Tell us about your favorite season or time of year and why it's meaningful.",
+        "Share a memory of helping someone in need.",
+        "What advice would you give about handling tough times?",
+        "Describe a perfect day spent with the people you love.",
+        "What family value or belief do you hope is passed on?",
+        "Tell us about your first car or your first driving experience.",
+        "What's a story from your parents' or grandparents' childhood that you want remembered?",
+        "What's a simple pleasure that always makes you happy?",
+        "What are you most proud of accomplishing in your life?",
+        "What's something you admire about each of your children or family members?",
+        "Share a memory from a family gathering or reunion.",
+        "What do you wish for the future of our family?",
+        "Tell us about a family challenge you faced together and how you got through it.",
+        "What is a hope, wish, or blessing you want to leave for your loved ones?"
+      ];
 
-      const promptText = promptData?.prompt_text || "What's one thing you're grateful for today?";
+      // Select a random prompt
+      const randomPrompt = promptOptions[Math.floor(Math.random() * promptOptions.length)];
 
       // Create the notification
       const { error } = await supabase
@@ -197,8 +245,8 @@ export function NotificationsProvider({ children }: { children: ReactNode }) {
           user_id: user.id,
           type: 'daily_prompt',
           title: 'Ready for Another Recording?',
-          message: `Tap to start your next memory: "${promptText}"`,
-          data: { prompt_text: promptText, action: 'second_video' }
+          message: `Tap to start your next memory: "${randomPrompt}"`,
+          data: { prompt_text: randomPrompt, action: 'second_video' }
         });
 
       if (error) throw error;

@@ -2,13 +2,14 @@ import { Heart, LogOut, Bell } from "lucide-react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useAuth } from "@/contexts/AuthContext";
 import { useNotifications } from "@/contexts/NotificationsContext";
 import { NotificationsCenter } from "./NotificationsCenter";
 import { useState } from "react";
 
 export function MobileHeader() {
-  const { logout, user } = useAuth();
+  const { logout, user, profile } = useAuth();
   const { unreadCount } = useNotifications();
   const [showNotifications, setShowNotifications] = useState(false);
 
@@ -46,10 +47,19 @@ export function MobileHeader() {
               )}
             </Button>
             
-            <Button variant="ghost" size="sm" onClick={handleLogout}>
-            Hi {user?.user_metadata?.full_name || user?.email}
-            <LogOut className="w-4 h-4 ml-2" />
-          </Button>
+            <Link to="/profile">
+              <Button variant="ghost" size="sm" className="flex items-center space-x-2">
+                <Avatar className="w-6 h-6">
+                  <AvatarImage src={profile?.avatar_url || undefined} />
+                  <AvatarFallback className="text-xs bg-primary/10 text-primary">
+                    {user?.user_metadata?.full_name?.[0] || user?.email?.[0] || 'U'}
+                  </AvatarFallback>
+                </Avatar>
+                <span className="text-sm font-medium truncate max-w-20">
+                  {user?.user_metadata?.full_name || user?.email}
+                </span>
+              </Button>
+            </Link>
           </div>
         </div>
       </div>

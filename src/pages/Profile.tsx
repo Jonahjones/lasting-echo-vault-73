@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
@@ -7,15 +7,25 @@ import { Separator } from "@/components/ui/separator";
 import { User, Bell, Globe, LogOut, Mail, Smartphone } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
+import { AvatarUpload } from "@/components/AvatarUpload";
+import { supabase } from "@/integrations/supabase/client";
 
 export default function Profile() {
-  const { user, logout } = useAuth();
+  const { user, logout, profile } = useAuth();
   const { toast } = useToast();
   
   const [isPublicProfile, setIsPublicProfile] = useState(false);
   const [emailNotifications, setEmailNotifications] = useState(true);
   const [pushNotifications, setPushNotifications] = useState(false);
   const [recordingReminders, setRecordingReminders] = useState(true);
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
+
+  // Load profile data on mount
+  useEffect(() => {
+    if (profile) {
+      setAvatarUrl(profile.avatar_url);
+    }
+  }, [profile]);
 
   const handleLogout = () => {
     logout();
@@ -65,7 +75,7 @@ export default function Profile() {
             </p>
           </div>
 
-          {/* User Info */}
+          {/* User Info & Avatar */}
           <Card className="shadow-card mb-6">
             <CardHeader>
               <CardTitle className="flex items-center space-x-2">
@@ -74,14 +84,28 @@ export default function Profile() {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="space-y-4">
-                <div>
-                  <Label className="text-sm font-medium text-muted-foreground">Name</Label>
-                  <p className="text-foreground font-medium">{user?.user_metadata?.full_name || user?.email}</p>
+              <div className="space-y-6">
+                {/* Avatar Section */}
+                <div className="flex flex-col items-center">
+                  <AvatarUpload 
+                    currentAvatarUrl={avatarUrl}
+                    onAvatarChange={setAvatarUrl}
+                    size="lg"
+                  />
                 </div>
-                <div>
-                  <Label className="text-sm font-medium text-muted-foreground">Email</Label>
-                  <p className="text-foreground font-medium">{user?.email}</p>
+                
+                <Separator />
+                
+                {/* User Details */}
+                <div className="space-y-4">
+                  <div>
+                    <Label className="text-sm font-medium text-muted-foreground">Name</Label>
+                    <p className="text-foreground font-medium">{user?.user_metadata?.full_name || user?.email}</p>
+                  </div>
+                  <div>
+                    <Label className="text-sm font-medium text-muted-foreground">Email</Label>
+                    <p className="text-foreground font-medium">{user?.email}</p>
+                  </div>
                 </div>
               </div>
             </CardContent>
