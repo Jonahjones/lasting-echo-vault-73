@@ -51,6 +51,27 @@ export type Database = {
         }
         Relationships: []
       }
+      daily_prompts: {
+        Row: {
+          created_at: string
+          date: string
+          id: string
+          prompt_text: string
+        }
+        Insert: {
+          created_at?: string
+          date: string
+          id?: string
+          prompt_text: string
+        }
+        Update: {
+          created_at?: string
+          date?: string
+          id?: string
+          prompt_text?: string
+        }
+        Relationships: []
+      }
       delivery_logs: {
         Row: {
           attempted_at: string
@@ -81,6 +102,42 @@ export type Database = {
           id?: string
           status?: string
           video_id?: string
+        }
+        Relationships: []
+      }
+      notifications: {
+        Row: {
+          created_at: string
+          data: Json | null
+          id: string
+          is_read: boolean
+          message: string
+          title: string
+          type: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          data?: Json | null
+          id?: string
+          is_read?: boolean
+          message: string
+          title: string
+          type: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          data?: Json | null
+          id?: string
+          is_read?: boolean
+          message?: string
+          title?: string
+          type?: string
+          updated_at?: string
+          user_id?: string
         }
         Relationships: []
       }

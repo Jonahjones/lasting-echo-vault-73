@@ -1,8 +1,8 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { ArrowLeft, Shuffle, Heart, MessageCircle, Clock } from "lucide-react";
-import { Link, useNavigate } from "react-router-dom";
+import { ArrowLeft, Shuffle, Heart, MessageCircle, Clock, Lightbulb } from "lucide-react";
+import { Link, useNavigate, useLocation } from "react-router-dom";
 import { VideoRecorder } from "@/components/VideoRecorder";
 import { SaveMessageModal } from "@/components/SaveMessageModal";
 import { useToast } from "@/hooks/use-toast";
@@ -45,14 +45,26 @@ export default function Record() {
   const [showSaveModal, setShowSaveModal] = useState(false);
   const [videoBlob, setVideoBlob] = useState<Blob | null>(null);
   const [recordingPrompt, setRecordingPrompt] = useState<string | undefined>(undefined);
+  const [dailyPrompt, setDailyPrompt] = useState<string | null>(null);
   const { toast } = useToast();
   const { saveVideo } = useVideoLibrary();
   const navigate = useNavigate();
+  const location = useLocation();
+
+  // Check for prompt from notification navigation
+  useEffect(() => {
+    if (location.state?.prompt) {
+      setDailyPrompt(location.state.prompt);
+      setSelectedPrompt(null);
+      setRandomPrompt(null);
+    }
+  }, [location.state]);
 
   const getRandomPrompt = () => {
     const randomIndex = Math.floor(Math.random() * additionalPrompts.length);
     setRandomPrompt(additionalPrompts[randomIndex]);
     setSelectedPrompt(null); // Clear selected prompt if random is chosen
+    setDailyPrompt(null); // Clear daily prompt if random is chosen
   };
 
   const handleVideoSave = (blob: Blob, prompt?: string) => {
@@ -68,6 +80,7 @@ export default function Record() {
     setVideoBlob(null);
     setSelectedPrompt(null);
     setRandomPrompt(null);
+    setDailyPrompt(null);
     setRecordingPrompt(undefined);
   };
 
@@ -98,11 +111,13 @@ export default function Record() {
     setVideoBlob(null);
     setSelectedPrompt(null);
     setRandomPrompt(null);
+    setDailyPrompt(null);
     setRecordingPrompt(undefined);
   };
 
   // Get current prompt text
   const getCurrentPrompt = () => {
+    if (dailyPrompt) return dailyPrompt;
     if (randomPrompt) return randomPrompt;
     if (selectedPrompt !== null) return recordingPrompts[selectedPrompt].prompt;
     return undefined;
@@ -156,8 +171,27 @@ export default function Record() {
           </Button>
         </div>
 
+        {/* Daily Prompt Display (from notification) */}
+        {dailyPrompt && (
+          <Card className="bg-yellow-500/5 border-yellow-500/20 shadow-card">
+            <CardContent className="p-4">
+              <div className="flex items-start space-x-3">
+                <div className="w-10 h-10 bg-yellow-500/10 rounded-lg flex items-center justify-center mt-1">
+                  <Lightbulb className="w-5 h-5 text-yellow-600" />
+                </div>
+                <div className="flex-1">
+                  <h4 className="font-medium text-foreground mb-2">Daily Prompt</h4>
+                  <p className="text-sm text-muted-foreground leading-relaxed">
+                    {dailyPrompt}
+                  </p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
         {/* Random Prompt Display */}
-        {randomPrompt && (
+        {randomPrompt && !dailyPrompt && (
           <Card className="bg-accent/5 border-accent/20 shadow-card">
             <CardContent className="p-4">
               <div className="flex items-start space-x-3">
@@ -176,7 +210,7 @@ export default function Record() {
         )}
 
         {/* Selected Prompt Display */}
-        {selectedPrompt !== null && !randomPrompt && (
+        {selectedPrompt !== null && !randomPrompt && !dailyPrompt && (
           <Card className="bg-primary/5 border-primary/20 shadow-card">
             <CardContent className="p-4">
               <div className="flex items-start space-x-3">
@@ -214,21 +248,22 @@ export default function Record() {
                 onClick={() => {
                   setSelectedPrompt(index);
                   setRandomPrompt(null); // Clear random prompt if guided is chosen
+                  setDailyPrompt(null); // Clear daily prompt if guided is chosen
                 }}
                 className={`w-full p-4 rounded-lg border text-left transition-all duration-200 hover:shadow-card ${
-                  selectedPrompt === index && !randomPrompt
+                  selectedPrompt === index && !randomPrompt && !dailyPrompt
                     ? "bg-primary/5 border-primary/20"
                     : "bg-card border-border hover:bg-muted"
                 }`}
               >
                 <div className="flex items-start space-x-3">
                   <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${
-                    selectedPrompt === index && !randomPrompt
+                    selectedPrompt === index && !randomPrompt && !dailyPrompt
                       ? "bg-primary/10"
                       : "bg-muted"
                   }`}>
                     <prompt.icon className={`w-5 h-5 ${
-                      selectedPrompt === index && !randomPrompt
+                      selectedPrompt === index && !randomPrompt && !dailyPrompt
                         ? "text-primary"
                         : "text-muted-foreground"
                     }`} />

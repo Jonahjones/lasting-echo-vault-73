@@ -6,6 +6,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { VideoLibraryProvider } from "@/contexts/VideoLibraryContext";
+import { NotificationsProvider } from "@/contexts/NotificationsContext";
 import { BottomNavigation } from "@/components/BottomNavigation";
 import { ProfileSetup } from "@/components/ProfileSetup";
 import { FirstVideoPrompt } from "@/components/FirstVideoPrompt";
@@ -86,15 +87,17 @@ const App = () => (
   <QueryClientProvider client={queryClient}>
     <AuthProvider>
       <VideoLibraryProvider>
-        <TooltipProvider>
-          <Toaster />
-          <Sonner />
-          <BrowserRouter>
-            <div className="min-h-screen bg-background">
-              <AppRoutes />
-            </div>
-          </BrowserRouter>
-        </TooltipProvider>
+        <NotificationsProvider>
+          <TooltipProvider>
+            <Toaster />
+            <Sonner />
+            <BrowserRouter>
+              <div className="min-h-screen bg-background">
+                <AppRoutes />
+              </div>
+            </BrowserRouter>
+          </TooltipProvider>
+        </NotificationsProvider>
       </VideoLibraryProvider>
     </AuthProvider>
   </QueryClientProvider>

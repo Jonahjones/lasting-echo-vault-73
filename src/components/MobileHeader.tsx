@@ -1,10 +1,16 @@
-import { Heart, LogOut } from "lucide-react";
+import { Heart, LogOut, Bell } from "lucide-react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/contexts/AuthContext";
+import { useNotifications } from "@/contexts/NotificationsContext";
+import { NotificationsCenter } from "./NotificationsCenter";
+import { useState } from "react";
 
 export function MobileHeader() {
   const { logout, user } = useAuth();
+  const { unreadCount } = useNotifications();
+  const [showNotifications, setShowNotifications] = useState(false);
 
   const handleLogout = () => {
     logout();
@@ -22,12 +28,36 @@ export function MobileHeader() {
             <span className="font-semibold text-lg text-foreground">One Final Moment</span>
           </Link>
           
-          <Button variant="ghost" size="sm" onClick={handleLogout}>
+          <div className="flex items-center space-x-2">
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              className="relative"
+              onClick={() => setShowNotifications(true)}
+            >
+              <Bell className="w-4 h-4" />
+              {unreadCount > 0 && (
+                <Badge 
+                  variant="destructive" 
+                  className="absolute -top-1 -right-1 w-5 h-5 flex items-center justify-center p-0 text-xs"
+                >
+                  {unreadCount > 99 ? '99+' : unreadCount}
+                </Badge>
+              )}
+            </Button>
+            
+            <Button variant="ghost" size="sm" onClick={handleLogout}>
             Hi {user?.user_metadata?.full_name || user?.email}
             <LogOut className="w-4 h-4 ml-2" />
           </Button>
+          </div>
         </div>
       </div>
+      
+      <NotificationsCenter 
+        isOpen={showNotifications}
+        onClose={() => setShowNotifications(false)}
+      />
     </header>
   );
 }
