@@ -8,6 +8,7 @@ import { AuthProvider } from "@/contexts/AuthContext";
 import { VideoLibraryProvider } from "@/contexts/VideoLibraryContext";
 import { NotificationsProvider } from "@/contexts/NotificationsContext";
 import { BottomNavigation } from "@/components/BottomNavigation";
+import { MobileHeader } from "@/components/MobileHeader";
 import { ProfileSetup } from "@/components/ProfileSetup";
 import { FirstVideoPrompt } from "@/components/FirstVideoPrompt";
 import Index from "./pages/Index";
@@ -67,6 +68,7 @@ function AppRoutes() {
   // Normal app routes for fully onboarded users
   return (
     <>
+      <MobileHeader />
       <Routes>
         <Route path="/" element={<Index />} />
         <Route path="/record" element={<Record />} />
