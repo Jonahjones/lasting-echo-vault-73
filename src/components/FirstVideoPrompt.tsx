@@ -9,7 +9,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 
 export function FirstVideoPrompt() {
-  const { user } = useAuth();
+  const { user, refreshProfile } = useAuth();
   const { createSkippedFirstVideoNotification } = useNotifications();
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -59,6 +59,9 @@ export function FirstVideoPrompt() {
         .update({ first_video_recorded: true })
         .eq('user_id', user.id);
 
+      // Refresh the profile to update local state
+      await refreshProfile();
+
       // Navigate to the recording page
       navigate('/record');
     } catch (error) {
@@ -81,6 +84,9 @@ export function FirstVideoPrompt() {
         .from('profiles')
         .update({ first_video_recorded: true })
         .eq('user_id', user.id);
+
+      // Refresh the profile to update local state
+      await refreshProfile();
 
       navigate('/');
     } catch (error) {
