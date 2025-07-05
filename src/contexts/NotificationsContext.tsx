@@ -32,6 +32,8 @@ interface NotificationsContextType {
   refreshNotifications: () => Promise<void>;
   createSkippedFirstVideoNotification: () => Promise<void>;
   createSecondVideoNotification: () => Promise<void>;
+  createDailyPromptNotification: () => Promise<void>;
+  getTodaysPrompt: () => Promise<DailyPrompt | null>;
 }
 
 const NotificationsContext = createContext<NotificationsContextType | undefined>(undefined);
@@ -256,6 +258,71 @@ export function NotificationsProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  const getTodaysPrompt = async (): Promise<DailyPrompt | null> => {
+    try {
+      const today = new Date().toISOString().split('T')[0];
+      
+      const { data, error } = await supabase
+        .from('daily_prompts')
+        .select('*')
+        .eq('date', today)
+        .maybeSingle();
+
+      if (error) throw error;
+      return data as DailyPrompt | null;
+    } catch (error) {
+      console.error('Error fetching today\'s prompt:', error);
+      return null;
+    }
+  };
+
+  const createDailyPromptNotification = async () => {
+    if (!user) return;
+
+    try {
+      const todaysPrompt = await getTodaysPrompt();
+      
+      if (!todaysPrompt) {
+        console.log('No daily prompt available for today');
+        return;
+      }
+
+      // Check if user already has today's prompt notification
+      const { data: existingNotification } = await supabase
+        .from('notifications')
+        .select('id')
+        .eq('user_id', user.id)
+        .eq('type', 'daily_prompt')
+        .gte('created_at', new Date().toISOString().split('T')[0])
+        .maybeSingle();
+
+      if (existingNotification) {
+        console.log('User already has today\'s prompt notification');
+        return;
+      }
+
+      // Create the daily prompt notification
+      const { error } = await supabase
+        .from('notifications')
+        .insert({
+          user_id: user.id,
+          type: 'daily_prompt',
+          title: 'Today\'s Memory Prompt',
+          message: `Take a moment to reflect: "${todaysPrompt.prompt_text}"`,
+          data: { 
+            prompt_text: todaysPrompt.prompt_text, 
+            prompt_id: todaysPrompt.id,
+            action: 'daily_prompt' 
+          }
+        });
+
+      if (error) throw error;
+      await fetchNotifications();
+    } catch (error) {
+      console.error('Error creating daily prompt notification:', error);
+    }
+  };
+
   const refreshNotifications = fetchNotifications;
 
   const unreadCount = notifications.filter(n => !n.is_read).length;
@@ -303,6 +370,8 @@ export function NotificationsProvider({ children }: { children: ReactNode }) {
         refreshNotifications,
         createSkippedFirstVideoNotification,
         createSecondVideoNotification,
+        createDailyPromptNotification,
+        getTodaysPrompt,
       }}
     >
       {children}

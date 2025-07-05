@@ -50,14 +50,18 @@ export function BottomNavigation() {
           ))}
           
           {/* Notifications Bell */}
-          <Button
-            variant="ghost"
-            size="sm"
-            className="flex flex-col items-center justify-center flex-1 py-2 px-1 rounded-lg relative"
-            onClick={() => setShowNotifications(true)}
+          <Link
+            to="/notifications"
+            className={`flex flex-col items-center justify-center flex-1 py-2 px-1 rounded-lg relative transition-all duration-300 ${
+              isActive("/notifications")
+                ? "bg-primary/10 text-primary"
+                : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
+            }`}
           >
-            <Bell className="w-5 h-5 mb-1 text-muted-foreground" />
-            <span className="text-xs font-medium text-muted-foreground">Alerts</span>
+            <Bell className={`w-5 h-5 mb-1 ${isActive("/notifications") ? "text-primary" : ""}`} />
+            <span className={`text-xs font-medium ${isActive("/notifications") ? "text-primary" : ""}`}>
+              Alerts
+            </span>
             {unreadCount > 0 && (
               <Badge 
                 variant="destructive" 
@@ -66,14 +70,9 @@ export function BottomNavigation() {
                 {unreadCount > 99 ? '99+' : unreadCount}
               </Badge>
             )}
-          </Button>
+          </Link>
         </div>
       </nav>
-      
-      <NotificationsCenter 
-        isOpen={showNotifications}
-        onClose={() => setShowNotifications(false)}
-      />
     </>
   );
 }
