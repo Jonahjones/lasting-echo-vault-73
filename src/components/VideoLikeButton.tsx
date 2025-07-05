@@ -1,146 +1,149 @@
-import { Heart } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { useVideoLikes } from "@/hooks/useVideoLikes";
-import { cn } from "@/lib/utils";
+import { useState, useEffect } from 'react';
+import { Button } from '@/components/ui/button';
+import { Heart } from 'lucide-react';
+import { useAuth } from '@/contexts/AuthContext';
+import { supabase } from '@/integrations/supabase/client';
+import { cn } from '@/lib/utils';
 
 interface VideoLikeButtonProps {
   videoId: string;
-  size?: "sm" | "md" | "lg";
-  variant?: "minimal" | "button" | "inline";
-  showCount?: boolean;
+  variant?: 'default' | 'inline';
+  size?: 'sm' | 'md' | 'lg';
   className?: string;
 }
 
 export function VideoLikeButton({ 
   videoId, 
-  size = "md", 
-  variant = "minimal",
-  showCount = true,
+  variant = 'default', 
+  size = 'md', 
   className 
 }: VideoLikeButtonProps) {
-  const { hasLiked, likesCount, isLoading, toggleLike } = useVideoLikes(videoId);
+  const { user } = useAuth();
+  const [isLiked, setIsLiked] = useState(false);
+  const [likesCount, setLikesCount] = useState(0);
+  const [isLoading, setIsLoading] = useState(false);
 
-  const sizeClasses = {
-    sm: "w-4 h-4",
-    md: "w-5 h-5", 
-    lg: "w-6 h-6"
+  useEffect(() => {
+    if (user) {
+      checkLikeStatus();
+    }
+    fetchLikesCount();
+  }, [videoId, user]);
+
+  const checkLikeStatus = async () => {
+    if (!user) return;
+    
+    try {
+      const { data } = await supabase
+        .from('video_likes')
+        .select('id')
+        .eq('video_id', videoId)
+        .eq('user_id', user.id)
+        .maybeSingle();
+      
+      setIsLiked(!!data);
+    } catch (error) {
+      console.error('Error checking like status:', error);
+    }
   };
 
-  const textSizeClasses = {
-    sm: "text-xs",
-    md: "text-sm",
-    lg: "text-base"
+  const fetchLikesCount = async () => {
+    try {
+      const { data } = await supabase
+        .from('videos')
+        .select('likes_count')
+        .eq('id', videoId)
+        .single();
+      
+      setLikesCount(data?.likes_count || 0);
+    } catch (error) {
+      console.error('Error fetching likes count:', error);
+    }
   };
 
-  if (variant === "button") {
-    return (
-      <Button
-        variant="ghost"
-        size="sm"
-        onClick={toggleLike}
-        disabled={isLoading}
-        className={cn(
-          "flex items-center space-x-2 transition-all duration-200 hover:scale-105",
-          className
-        )}
-      >
-        <Heart 
-          className={cn(
-            sizeClasses[size],
-            "transition-all duration-300",
-            hasLiked 
-              ? "fill-red-500 text-red-500 animate-pulse" 
-              : "text-muted-foreground hover:text-red-400",
-            isLoading && "opacity-50"
-          )}
-        />
-        {showCount && (
-          <span className={cn(
-            textSizeClasses[size],
-            hasLiked ? "text-red-500 font-medium" : "text-muted-foreground"
-          )}>
-            {likesCount}
-          </span>
-        )}
-      </Button>
-    );
-  }
+  const handleLikeToggle = async () => {
+    if (!user || isLoading) return;
+    
+    setIsLoading(true);
+    try {
+      if (isLiked) {
+        // Remove like
+        const { error } = await supabase
+          .from('video_likes')
+          .delete()
+          .eq('video_id', videoId)
+          .eq('user_id', user.id);
+        
+        if (error) throw error;
+        setIsLiked(false);
+      } else {
+        // Add like
+        const { error } = await supabase
+          .from('video_likes')
+          .insert({
+            video_id: videoId,
+            user_id: user.id
+          });
+        
+        if (error) throw error;
+        setIsLiked(true);
+      }
+      
+      // Refresh likes count - triggers database function to update count
+      await fetchLikesCount();
+    } catch (error) {
+      console.error('Error toggling like:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
-  if (variant === "inline") {
-    return (
-      <button
-        onClick={toggleLike}
-        disabled={isLoading}
-        className={cn(
-          "flex items-center space-x-1 transition-all duration-200 hover:scale-105 focus:outline-none",
-          className
-        )}
-      >
-        <Heart 
-          className={cn(
-            sizeClasses[size],
-            "transition-all duration-300",
-            hasLiked 
-              ? "fill-red-500 text-red-500" 
-              : "text-muted-foreground hover:text-red-400",
-            isLoading && "opacity-50"
-          )}
-        />
-        {showCount && (
-          <span className={cn(
-            textSizeClasses[size],
-            hasLiked ? "text-red-500 font-medium" : "text-muted-foreground"
-          )}>
-            {likesCount}
-          </span>
-        )}
-      </button>
-    );
-  }
+  const getSizeClasses = () => {
+    switch (size) {
+      case 'sm': return 'w-4 h-4';
+      case 'lg': return 'w-6 h-6';  
+      default: return 'w-5 h-5';
+    }
+  };
 
-  // Minimal variant (default)
-  return (
-    <button
-      onClick={toggleLike}
-      disabled={isLoading}
-      className={cn(
-        "group flex items-center space-x-1 transition-all duration-200 focus:outline-none",
-        "hover:scale-110 active:scale-95",
-        className
-      )}
-    >
-      <div className="relative">
+  if (variant === 'inline') {
+    return (
+      <div className={cn("flex items-center space-x-1", className)}>
         <Heart 
           className={cn(
-            sizeClasses[size],
-            "transition-all duration-300",
-            hasLiked 
-              ? "fill-red-500 text-red-500 drop-shadow-sm" 
-              : "text-muted-foreground group-hover:text-red-400",
-            isLoading && "opacity-50"
-          )}
+            getSizeClasses(),
+            isLiked ? "text-red-500 fill-red-500" : "text-muted-foreground"
+          )} 
         />
-        {/* Pulse animation on like */}
-        {hasLiked && (
-          <Heart 
-            className={cn(
-              sizeClasses[size],
-              "absolute inset-0 fill-red-500 text-red-500 animate-ping opacity-30"
-            )}
-          />
-        )}
-      </div>
-      {showCount && (
-        <span className={cn(
-          textSizeClasses[size],
-          "transition-colors duration-200",
-          hasLiked 
-            ? "text-red-500 font-medium" 
-            : "text-muted-foreground group-hover:text-foreground"
-        )}>
+        <span className="text-sm font-medium text-muted-foreground">
           {likesCount}
         </span>
+      </div>
+    );
+  }
+
+  return (
+    <Button
+      variant="ghost"
+      size="sm"
+      onClick={handleLikeToggle}
+      disabled={!user || isLoading}
+      className={cn(
+        "flex items-center space-x-2 hover:bg-red-50 hover:text-red-600 transition-colors",
+        className
       )}
-    </button>
+      aria-label={isLiked ? "Unlike video" : "Like video"}
+    >
+      <Heart 
+        className={cn(
+          getSizeClasses(),
+          isLiked ? "text-red-500 fill-red-500" : "text-muted-foreground",
+          isLoading && "animate-pulse"
+        )} 
+      />
+      <span className="font-medium">
+        {likesCount}
+      </span>
+    </Button>
   );
 }

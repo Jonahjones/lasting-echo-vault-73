@@ -36,6 +36,27 @@ export type Database = {
         }
         Relationships: []
       }
+      admin_users: {
+        Row: {
+          created_at: string
+          id: string
+          role: Database["public"]["Enums"]["admin_role"]
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          role?: Database["public"]["Enums"]["admin_role"]
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          role?: Database["public"]["Enums"]["admin_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
       contacts: {
         Row: {
           contact_type: Database["public"]["Enums"]["contact_type"]
@@ -231,6 +252,44 @@ export type Database = {
         }
         Relationships: []
       }
+      video_reports: {
+        Row: {
+          created_at: string
+          details: string | null
+          id: string
+          reason: string
+          reporter_user_id: string
+          status: string
+          video_id: string
+        }
+        Insert: {
+          created_at?: string
+          details?: string | null
+          id?: string
+          reason: string
+          reporter_user_id: string
+          status?: string
+          video_id: string
+        }
+        Update: {
+          created_at?: string
+          details?: string | null
+          id?: string
+          reason?: string
+          reporter_user_id?: string
+          status?: string
+          video_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "video_reports_video_id_fkey"
+            columns: ["video_id"]
+            isOneToOne: false
+            referencedRelation: "videos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       videos: {
         Row: {
           category: string | null
@@ -239,8 +298,12 @@ export type Database = {
           duration: string | null
           file_path: string | null
           file_size: number | null
+          flag_reason: string | null
+          flagged_at: string | null
+          flagged_by_user_id: string | null
           id: string
           is_featured: boolean
+          is_flagged: boolean
           is_public: boolean
           likes_count: number
           mime_type: string | null
@@ -258,8 +321,12 @@ export type Database = {
           duration?: string | null
           file_path?: string | null
           file_size?: number | null
+          flag_reason?: string | null
+          flagged_at?: string | null
+          flagged_by_user_id?: string | null
           id?: string
           is_featured?: boolean
+          is_flagged?: boolean
           is_public?: boolean
           likes_count?: number
           mime_type?: string | null
@@ -277,8 +344,12 @@ export type Database = {
           duration?: string | null
           file_path?: string | null
           file_size?: number | null
+          flag_reason?: string | null
+          flagged_at?: string | null
+          flagged_by_user_id?: string | null
           id?: string
           is_featured?: boolean
+          is_flagged?: boolean
           is_public?: boolean
           likes_count?: number
           mime_type?: string | null
@@ -296,9 +367,13 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      is_admin: {
+        Args: { user_uuid: string }
+        Returns: boolean
+      }
     }
     Enums: {
+      admin_role: "super_admin" | "moderator"
       contact_type: "trusted" | "regular"
       trusted_contact_role: "executor" | "legacy_messenger" | "guardian"
     }
@@ -416,6 +491,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
+      admin_role: ["super_admin", "moderator"],
       contact_type: ["trusted", "regular"],
       trusted_contact_role: ["executor", "legacy_messenger", "guardian"],
     },
