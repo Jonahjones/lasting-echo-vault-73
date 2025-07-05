@@ -149,6 +149,39 @@ export default function Library() {
             </p>
           </div>
 
+          {/* Usage Allowance & Upgrade CTA */}
+          <Card className="bg-gradient-to-r from-yellow-50 to-orange-50 border-yellow-200 shadow-gentle mb-8 relative">
+            <Button
+              variant="ghost"
+              size="sm"
+              className="absolute top-2 right-2 w-6 h-6 p-0 text-muted-foreground hover:text-foreground"
+            >
+              <span className="sr-only">Dismiss</span>×
+            </Button>
+            <CardContent className="p-4">
+              <div className="flex items-center space-x-3">
+                <div className="w-10 h-10 bg-yellow-100 rounded-full flex items-center justify-center">
+                  <Crown className="w-5 h-5 text-yellow-600" />
+                </div>
+                <div className="flex-1">
+                  <p className="font-medium text-foreground mb-1">
+                    You can record {currentUsage.maxVideos - currentUsage.videos} more video{currentUsage.maxVideos - currentUsage.videos === 1 ? '' : 's'} with your current plan.
+                  </p>
+                  <p className="text-sm text-muted-foreground mb-3">
+                    Unlock unlimited messages and cherish every moment—go Premium!
+                  </p>
+                  <Button 
+                    size="sm" 
+                    className="bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-600 hover:to-orange-600 text-white"
+                  >
+                    <Star className="w-4 h-4 mr-2" />
+                    Upgrade to Premium
+                  </Button>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
           {/* Tabs */}
           <Tabs defaultValue="messages" className="space-y-8">
             <TabsList className="flex w-full">
