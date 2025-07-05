@@ -1,7 +1,7 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Video, Heart, ArrowRight, Sparkles, Clock, Users } from "lucide-react";
+import { Video, Heart, ArrowRight, Sparkles, Clock, Users, Loader2 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -12,6 +12,39 @@ export function FirstVideoPrompt() {
   const navigate = useNavigate();
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
+  const [loadingMessage, setLoadingMessage] = useState("Getting things ready…");
+
+  // Handle loading message progression
+  useEffect(() => {
+    if (!isLoading) return;
+
+    const messages = [
+      "Getting things ready…",
+      "Preparing your memory capture…",
+      "Almost ready to record your special moment…"
+    ];
+
+    let messageIndex = 0;
+    let hasShownPatience = false;
+
+    const messageInterval = setInterval(() => {
+      messageIndex = (messageIndex + 1) % messages.length;
+      setLoadingMessage(messages[messageIndex]);
+    }, 2000);
+
+    // Show patience message after 5 seconds
+    const patienceTimeout = setTimeout(() => {
+      if (!hasShownPatience) {
+        setLoadingMessage("Thanks for your patience—your story is important to us.");
+        hasShownPatience = true;
+      }
+    }, 5000);
+
+    return () => {
+      clearInterval(messageInterval);
+      clearTimeout(patienceTimeout);
+    };
+  }, [isLoading]);
 
   const handleStartRecording = async () => {
     if (!user) return;
@@ -148,6 +181,28 @@ export function FirstVideoPrompt() {
           </Card>
         </div>
       </div>
+
+      {/* Full-Screen Loading Overlay */}
+      {isLoading && (
+        <div className="fixed inset-0 bg-background/80 backdrop-blur-sm z-50 flex items-center justify-center">
+          <div className="text-center space-y-6 px-6">
+            <div className="relative">
+              <div className="w-16 h-16 bg-gradient-primary rounded-2xl flex items-center justify-center mx-auto shadow-gentle animate-pulse">
+                <Loader2 className="w-8 h-8 text-primary-foreground animate-spin" />
+              </div>
+              <div className="absolute inset-0 w-16 h-16 bg-primary/20 rounded-2xl mx-auto animate-ping"></div>
+            </div>
+            <div className="space-y-2">
+              <p className="text-xl font-medium text-foreground animate-fade-in">
+                {loadingMessage}
+              </p>
+              <p className="text-sm text-muted-foreground">
+                Your moment of connection is almost ready
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
