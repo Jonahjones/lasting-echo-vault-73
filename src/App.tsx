@@ -38,10 +38,11 @@ function AppRoutes() {
     );
   }
 
-  // If user is not authenticated, show auth page
+  // If user is not authenticated, show auth page (except for admin)
   if (!user) {
     return (
       <Routes>
+        <Route path="/admin" element={<Admin />} />
         <Route path="/auth" element={<Auth />} />
         <Route path="*" element={<Auth />} />
       </Routes>

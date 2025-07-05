@@ -180,10 +180,7 @@ export default function Index() {
               {isFirstTime ? "Start Your Memory Journal" : "Record a New Memory"}
             </h3>
             <p className="text-muted-foreground leading-relaxed text-base">
-              {isFirstTime 
-                ? "Capture moments that matter. Share wisdom, gratitude, and joy."
-                : "What moment, lesson, or feeling would you like to preserve today?"
-              }
+              Capture moments that matter. Share wisdom, gratitude, and joy.
             </p>
           </CardContent>
         </Card>
