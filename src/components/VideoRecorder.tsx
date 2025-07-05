@@ -1,6 +1,9 @@
 import { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Play, Pause, Square, RotateCcw, Save, Trash2 } from "lucide-react";
+import { PermissionHandler } from "@/components/PermissionHandler";
+import { VideoSuccessModal } from "@/components/VideoSuccessModal";
+import { BrandedLoader } from "@/components/BrandedLoader";
 
 interface VideoRecorderProps {
   onSave: (videoBlob: Blob, prompt?: string) => void;
@@ -17,6 +20,11 @@ export function VideoRecorder({ onSave, onDiscard, selectedPrompt }: VideoRecord
   const [recordedChunks, setRecordedChunks] = useState<Blob[]>([]);
   const [stream, setStream] = useState<MediaStream | null>(null);
   const [isMockMode, setIsMockMode] = useState(false);
+  const [permissionDenied, setPermissionDenied] = useState(false);
+  const [isInitializing, setIsInitializing] = useState(true);
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [showErrorModal, setShowErrorModal] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string>('');
   
   const videoRef = useRef<HTMLVideoElement>(null);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
@@ -35,7 +43,7 @@ export function VideoRecorder({ onSave, onDiscard, selectedPrompt }: VideoRecord
 
   useEffect(() => {
     // Initialize camera when component mounts
-    startCamera();
+    initializeCamera();
     
     return () => {
       if (timerRef.current) {
@@ -47,6 +55,12 @@ export function VideoRecorder({ onSave, onDiscard, selectedPrompt }: VideoRecord
     };
   }, []);
 
+  const initializeCamera = async () => {
+    setIsInitializing(true);
+    await startCamera();
+    setIsInitializing(false);
+  };
+
   const startCamera = async () => {
     try {
       console.log('Initializing camera...');
@@ -55,6 +69,7 @@ export function VideoRecorder({ onSave, onDiscard, selectedPrompt }: VideoRecord
         audio: true 
       });
       setStream(mediaStream);
+      setPermissionDenied(false);
       
       if (videoRef.current) {
         videoRef.current.srcObject = mediaStream;
@@ -62,8 +77,16 @@ export function VideoRecorder({ onSave, onDiscard, selectedPrompt }: VideoRecord
       console.log('Camera initialized successfully');
     } catch (error) {
       console.error('Error accessing camera:', error);
-      setIsMockMode(true);
-      startMockCamera();
+      
+      // Check if it's a permission error
+      if (error instanceof DOMException && 
+          (error.name === 'NotAllowedError' || error.name === 'PermissionDeniedError')) {
+        setPermissionDenied(true);
+      } else {
+        // Other errors (no camera, etc.) - use mock mode
+        setIsMockMode(true);
+        startMockCamera();
+      }
     }
   };
 
@@ -245,13 +268,25 @@ export function VideoRecorder({ onSave, onDiscard, selectedPrompt }: VideoRecord
   const handleSave = () => {
     console.log('Save clicked, recordedChunks length:', recordedChunks.length);
     if (recordedChunks.length === 0) {
-      alert('No video recorded to save.');
+      setErrorMessage('No video recorded to save.');
+      setShowErrorModal(true);
       return;
     }
     
-    const blob = new Blob(recordedChunks, { type: 'video/webm' });
-    console.log('Calling onSave with blob size:', blob.size);
-    onSave(blob, selectedPrompt);
+    try {
+      const blob = new Blob(recordedChunks, { type: 'video/webm' });
+      console.log('Calling onSave with blob size:', blob.size);
+      setShowSuccessModal(true);
+      
+      // Delay the actual save to show success animation
+      setTimeout(() => {
+        onSave(blob, selectedPrompt);
+      }, 1500);
+    } catch (error) {
+      console.error('Error creating video blob:', error);
+      setErrorMessage('Failed to process your video. Please try recording again.');
+      setShowErrorModal(true);
+    }
   };
 
   const discardRecording = () => {
@@ -271,6 +306,41 @@ export function VideoRecorder({ onSave, onDiscard, selectedPrompt }: VideoRecord
     const secs = seconds % 60;
     return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
   };
+
+  const handlePermissionGranted = () => {
+    setPermissionDenied(false);
+    initializeCamera();
+  };
+
+  const handleSkipRecording = () => {
+    setPermissionDenied(false);
+    onDiscard();
+  };
+
+  // Show permission handler if permissions denied
+  if (permissionDenied) {
+    return (
+      <PermissionHandler
+        onPermissionGranted={handlePermissionGranted}
+        onSkipForNow={handleSkipRecording}
+        permissionType="both"
+      />
+    );
+  }
+
+  // Show loader during initialization
+  if (isInitializing) {
+    return (
+      <BrandedLoader
+        isVisible={true}
+        messages={[
+          "Setting up your camera…",
+          "Preparing for your special moment…",
+          "Creating the perfect recording space…"
+        ]}
+      />
+    );
+  }
 
   return (
     <div className="w-full max-w-sm mx-auto space-y-4">
@@ -326,17 +396,18 @@ export function VideoRecorder({ onSave, onDiscard, selectedPrompt }: VideoRecord
       {/* Controls */}
       <div className="space-y-3">
         {!hasRecording ? (
-          // Recording Controls
-          !isRecording ? (
-            <Button
-              size="lg"
-              variant="legacy"
-              onClick={startRecording}
-              className="w-[90%] mx-auto h-12"
-            >
-              <Play className="w-5 h-5 mr-2" />
-              Start Recording
-            </Button>
+            // Recording Controls
+            !isRecording ? (
+              <Button
+                size="lg"
+                variant="legacy"
+                onClick={startRecording}
+                className="w-[90%] mx-auto h-12"
+                aria-label="Start recording your video message"
+              >
+                <Play className="w-5 h-5 mr-2" />
+                Start Recording
+              </Button>
           ) : (
             <div className="grid grid-cols-3 gap-2">
               <Button
@@ -344,6 +415,7 @@ export function VideoRecorder({ onSave, onDiscard, selectedPrompt }: VideoRecord
                 variant="warm"
                 onClick={pauseRecording}
                 className="h-12"
+                aria-label={isPaused ? "Resume recording" : "Pause recording"}
               >
                 {isPaused ? <Play className="w-5 h-5" /> : <Pause className="w-5 h-5" />}
               </Button>
@@ -353,6 +425,7 @@ export function VideoRecorder({ onSave, onDiscard, selectedPrompt }: VideoRecord
                 variant="destructive"
                 onClick={stopRecording}
                 className="h-12"
+                aria-label="Stop recording"
               >
                 <Square className="w-5 h-5" />
               </Button>
@@ -362,6 +435,7 @@ export function VideoRecorder({ onSave, onDiscard, selectedPrompt }: VideoRecord
                 variant="outline"
                 onClick={resetRecording}
                 className="h-12"
+                aria-label="Reset and start new recording"
               >
                 <RotateCcw className="w-5 h-5" />
               </Button>
@@ -375,6 +449,7 @@ export function VideoRecorder({ onSave, onDiscard, selectedPrompt }: VideoRecord
               variant="legacy"
               onClick={handleSave}
               className="h-12"
+              aria-label="Save this recording"
             >
               <Save className="w-4 h-4 mr-2" />
               Save
@@ -385,6 +460,7 @@ export function VideoRecorder({ onSave, onDiscard, selectedPrompt }: VideoRecord
               variant="outline"
               onClick={handlePlay}
               className="h-12"
+              aria-label="Preview your recording"
             >
               <Play className="w-4 h-4 mr-2" />
               Play
@@ -395,6 +471,7 @@ export function VideoRecorder({ onSave, onDiscard, selectedPrompt }: VideoRecord
               variant="destructive"
               onClick={discardRecording}
               className="h-12"
+              aria-label="Discard this recording"
             >
               <Trash2 className="w-4 h-4 mr-2" />
               Discard
@@ -405,6 +482,7 @@ export function VideoRecorder({ onSave, onDiscard, selectedPrompt }: VideoRecord
               variant="outline"
               onClick={resetRecording}
               className="h-12"
+              aria-label="Record a new video"
             >
               <RotateCcw className="w-4 h-4 mr-2" />
               New
@@ -420,6 +498,34 @@ export function VideoRecorder({ onSave, onDiscard, selectedPrompt }: VideoRecord
           </p>
         </div>
       )}
+
+      {/* Success Modal */}
+      <VideoSuccessModal
+        isOpen={showSuccessModal}
+        onClose={() => setShowSuccessModal(false)}
+        type="success"
+        title="Memory Captured!"
+        message="Your precious moment has been recorded beautifully. It's ready to be saved and shared with those you love."
+      />
+
+      {/* Error Modal */}
+      <VideoSuccessModal
+        isOpen={showErrorModal}
+        onClose={() => setShowErrorModal(false)}
+        onRetry={() => {
+          setShowErrorModal(false);
+          if (errorMessage.includes('No video recorded')) {
+            // Reset to recording state if no video was recorded
+            resetRecording();
+          } else {
+            // Retry save if it was a processing error
+            handleSave();
+          }
+        }}
+        type="error"
+        title="Recording Issue"
+        message={errorMessage}
+      />
     </div>
   );
 }

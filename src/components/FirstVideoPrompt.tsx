@@ -1,12 +1,14 @@
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Video, Heart, ArrowRight, Sparkles, Clock, Users, Loader2 } from "lucide-react";
+import { Video, Heart, ArrowRight, Sparkles, Clock, Users } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useNotifications } from "@/contexts/NotificationsContext";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { BrandedLoader } from "@/components/BrandedLoader";
+import { EmptyStateEncouragement } from "@/components/EmptyStateEncouragement";
 
 export function FirstVideoPrompt() {
   const { user, refreshProfile } = useAuth();
@@ -191,26 +193,16 @@ export function FirstVideoPrompt() {
       </div>
 
       {/* Full-Screen Loading Overlay */}
-      {isLoading && (
-        <div className="fixed inset-0 bg-background/80 backdrop-blur-sm z-50 flex items-center justify-center">
-          <div className="text-center space-y-6 px-6">
-            <div className="relative">
-              <div className="w-16 h-16 bg-gradient-primary rounded-2xl flex items-center justify-center mx-auto shadow-gentle animate-pulse">
-                <Loader2 className="w-8 h-8 text-primary-foreground animate-spin" />
-              </div>
-              <div className="absolute inset-0 w-16 h-16 bg-primary/20 rounded-2xl mx-auto animate-ping"></div>
-            </div>
-            <div className="space-y-2">
-              <p className="text-xl font-medium text-foreground animate-fade-in">
-                {loadingMessage}
-              </p>
-              <p className="text-sm text-muted-foreground">
-                Your moment of connection is almost ready
-              </p>
-            </div>
-          </div>
-        </div>
-      )}
+      <BrandedLoader
+        isVisible={isLoading}
+        title="Memory Journal"
+        messages={[
+          "Getting things ready for your special moment…",
+          "Preparing your memory capture experience…",
+          "Almost ready to record your meaningful memory…"
+        ]}
+        showPatienceMessage={true}
+      />
     </div>
   );
 }
