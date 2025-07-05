@@ -25,7 +25,11 @@ interface Contact {
 }
 
 export default function Contacts() {
+  console.log('Contacts component rendering...');
+  
   const { user } = useAuth();
+  console.log('User from auth:', user);
+  
   const { toast } = useToast();
   const [contacts, setContacts] = useState<Contact[]>([]);
   const [loading, setLoading] = useState(true);
