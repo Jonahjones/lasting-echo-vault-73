@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Heart, Video, Users, Library, Settings, Clock, MessageCircle, Play, Calendar, FileText, Sparkles } from "lucide-react";
+import { Heart, Video, Users, Library, Settings, Clock, MessageCircle, Play, Calendar, FileText, Sparkles, Lock, LockOpen } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { VideoDetailModal } from "@/components/VideoDetailModal";
@@ -228,12 +228,17 @@ export default function Index() {
         ) : displayedVideos.length > 0 ? (
           <div className="flex space-x-4 px-6 max-w-lg mx-auto">
             {displayedVideos.map((video) => (
-              <Card 
+               <Card 
                 key={video.id}
                 className="flex-shrink-0 w-64 shadow-gentle hover:shadow-comfort transition-all duration-300 cursor-pointer hover:scale-[1.02]"
                 onClick={() => handleVideoClick(video)}
               >
-                <CardContent className="p-4">
+                <CardContent className="p-4 relative">
+                  {/* Public Status Icon */}
+                  <div className="absolute top-2 right-2 w-6 h-6 bg-blue-500/90 rounded-full flex items-center justify-center">
+                    <LockOpen className="w-3 h-3 text-white" />
+                  </div>
+                  
                   <div className="w-12 h-12 bg-gradient-accent rounded-2xl flex items-center justify-center mb-3">
                     <Play className="w-6 h-6 text-accent-foreground" />
                   </div>
