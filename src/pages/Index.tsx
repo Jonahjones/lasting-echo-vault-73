@@ -5,12 +5,16 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Heart, Video, Users, Library, Settings, Clock, MessageCircle, Play, Calendar, FileText, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
+import { VideoDetailModal } from "@/components/VideoDetailModal";
 
 export default function Index() {
   const { user, profile, isLoading } = useAuth();
   const navigate = useNavigate();
   const [userStats, setUserStats] = useState({ total: 0, scheduled: 0, delivered: 0 });
   const [publicVideos, setPublicVideos] = useState<any[]>([]);
+  const [displayedVideos, setDisplayedVideos] = useState<any[]>([]);
+  const [selectedVideo, setSelectedVideo] = useState<any>(null);
+  const [isVideoModalOpen, setIsVideoModalOpen] = useState(false);
   const [loading, setLoading] = useState(true);
 
   console.log('Index component state:', { user: !!user, profile: !!profile, isLoading, loading });
@@ -43,13 +47,14 @@ export default function Index() {
         };
         setUserStats(stats);
 
-        // Load inspiring public videos
+        // Load inspiring public videos (prioritize recent and most-liked)
         const { data: publicVids } = await supabase
           .from('videos')
-          .select('id, title, description, created_at')
+          .select('id, title, description, created_at, likes_count, user_id')
           .eq('is_public', true)
+          .order('likes_count', { ascending: false })
           .order('created_at', { ascending: false })
-          .limit(5);
+          .limit(10);
 
         setPublicVideos(publicVids || []);
       } catch (error) {
@@ -61,6 +66,38 @@ export default function Index() {
 
     loadDashboardData();
   }, [user]);
+
+  // Auto-rotation for displayed videos (show 2 at a time, rotate every 10 seconds)
+  useEffect(() => {
+    if (publicVideos.length <= 2) {
+      setDisplayedVideos(publicVideos);
+      return;
+    }
+
+    // Show first 2 videos initially
+    setDisplayedVideos(publicVideos.slice(0, 2));
+
+    const interval = setInterval(() => {
+      setDisplayedVideos(prev => {
+        const currentIndex = publicVideos.findIndex(video => video.id === prev[0]?.id);
+        const nextIndex = (currentIndex + 2) % publicVideos.length;
+        
+        // If we're near the end, wrap around
+        if (nextIndex + 1 >= publicVideos.length) {
+          return [publicVideos[nextIndex], publicVideos[0]];
+        }
+        
+        return publicVideos.slice(nextIndex, nextIndex + 2);
+      });
+    }, 10000); // 10 seconds
+
+    return () => clearInterval(interval);
+  }, [publicVideos]);
+
+  const handleVideoClick = (video: any) => {
+    setSelectedVideo(video);
+    setIsVideoModalOpen(true);
+  };
 
   // Show auth loading state
   if (isLoading) {
@@ -164,41 +201,90 @@ export default function Index() {
       </div>
 
       {/* Inspirational Community Carousel */}
-      {publicVideos.length > 0 && (
-        <div className="mb-8">
-          <div className="px-6 mb-4 max-w-lg mx-auto">
-            <h2 className="text-lg font-serif font-medium text-foreground mb-2">
-              Stories That Inspire
-            </h2>
-            <p className="text-sm text-muted-foreground">
-              See how others are remembered
+      <div className="mb-8">
+        <div className="px-6 mb-4 max-w-lg mx-auto">
+          <h2 className="text-lg font-serif font-medium text-foreground mb-2">
+            Stories That Inspire
+          </h2>
+          <p className="text-sm text-muted-foreground">
+            See how others are remembered
+          </p>
+        </div>
+        
+        {loading ? (
+          /* Loading skeleton */
+          <div className="flex space-x-4 px-6 max-w-lg mx-auto">
+            {[1, 2].map((i) => (
+              <Card key={i} className="flex-shrink-0 w-64 shadow-gentle animate-pulse">
+                <CardContent className="p-4">
+                  <div className="w-12 h-12 bg-muted rounded-2xl mb-3"></div>
+                  <div className="h-4 bg-muted rounded mb-2"></div>
+                  <div className="h-3 bg-muted rounded mb-1"></div>
+                  <div className="h-3 bg-muted rounded w-3/4"></div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        ) : displayedVideos.length > 0 ? (
+          <div className="flex space-x-4 px-6 max-w-lg mx-auto">
+            {displayedVideos.map((video) => (
+              <Card 
+                key={video.id}
+                className="flex-shrink-0 w-64 shadow-gentle hover:shadow-comfort transition-all duration-300 cursor-pointer hover:scale-[1.02]"
+                onClick={() => handleVideoClick(video)}
+              >
+                <CardContent className="p-4">
+                  <div className="w-12 h-12 bg-gradient-accent rounded-2xl flex items-center justify-center mb-3">
+                    <Play className="w-6 h-6 text-accent-foreground" />
+                  </div>
+                  <h4 className="font-semibold text-foreground mb-2 line-clamp-2">
+                    {video.title}
+                  </h4>
+                  <p className="text-sm text-muted-foreground line-clamp-3 mb-3">
+                    {video.description || "A meaningful message shared with love"}
+                  </p>
+                  <div className="flex items-center justify-between text-xs text-muted-foreground">
+                    <span>{new Date(video.created_at).toLocaleDateString()}</span>
+                    <div className="flex items-center space-x-1">
+                      <Heart className="w-3 h-3" />
+                      <span>{video.likes_count}</span>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        ) : (
+          /* No public videos fallback */
+          <div className="px-6 max-w-lg mx-auto">
+            <Card className="shadow-gentle bg-muted/20 border-dashed border-2 border-muted-foreground/20">
+              <CardContent className="p-8 text-center">
+                <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center mx-auto mb-4">
+                  <Heart className="w-8 h-8 text-muted-foreground" />
+                </div>
+                <h3 className="font-medium text-foreground mb-2">
+                  No public memories here yet
+                </h3>
+                <p className="text-sm text-muted-foreground mb-4">
+                  Make your message public to inspire others!
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  Want to inspire others? Mark your message public in the details screen!
+                </p>
+              </CardContent>
+            </Card>
+          </div>
+        )}
+
+        {/* Encourage Public Sharing */}
+        {displayedVideos.length > 0 && (
+          <div className="px-6 mt-4 max-w-lg mx-auto text-center">
+            <p className="text-xs text-muted-foreground">
+              Share your story with the world—make your message public for others to see
             </p>
           </div>
-          
-          <div className="overflow-x-auto">
-            <div className="flex space-x-4 px-6 max-w-lg mx-auto">
-              {publicVideos.map((video) => (
-                <Card 
-                  key={video.id}
-                  className="flex-shrink-0 w-64 shadow-gentle hover:shadow-comfort transition-all duration-300 cursor-pointer"
-                >
-                  <CardContent className="p-4">
-                    <div className="w-12 h-12 bg-gradient-accent rounded-2xl flex items-center justify-center mb-3">
-                      <Play className="w-6 h-6 text-accent-foreground" />
-                    </div>
-                    <h4 className="font-semibold text-foreground mb-2 line-clamp-2">
-                      {video.title}
-                    </h4>
-                    <p className="text-sm text-muted-foreground line-clamp-3">
-                      {video.description || "A meaningful message shared with love"}
-                    </p>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-          </div>
-        </div>
-      )}
+        )}
+      </div>
 
       {/* Your Journey Section */}
       <div className="px-6 space-y-4 max-w-lg mx-auto">
@@ -351,6 +437,16 @@ export default function Index() {
           </Card>
         )}
       </div>
+
+      {/* Video Detail Modal */}
+      <VideoDetailModal
+        video={selectedVideo}
+        isOpen={isVideoModalOpen}
+        onClose={() => {
+          setIsVideoModalOpen(false);
+          setSelectedVideo(null);
+        }}
+      />
     </div>
   );
 }

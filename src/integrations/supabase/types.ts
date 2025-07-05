@@ -51,6 +51,27 @@ export type Database = {
         }
         Relationships: []
       }
+      video_likes: {
+        Row: {
+          created_at: string
+          id: string
+          user_id: string
+          video_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          user_id: string
+          video_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          user_id?: string
+          video_id?: string
+        }
+        Relationships: []
+      }
       videos: {
         Row: {
           category: string | null
@@ -61,6 +82,7 @@ export type Database = {
           file_size: number | null
           id: string
           is_public: boolean
+          likes_count: number
           mime_type: string | null
           prompt: string | null
           scheduled_delivery_date: string | null
@@ -78,6 +100,7 @@ export type Database = {
           file_size?: number | null
           id?: string
           is_public?: boolean
+          likes_count?: number
           mime_type?: string | null
           prompt?: string | null
           scheduled_delivery_date?: string | null
@@ -95,6 +118,7 @@ export type Database = {
           file_size?: number | null
           id?: string
           is_public?: boolean
+          likes_count?: number
           mime_type?: string | null
           prompt?: string | null
           scheduled_delivery_date?: string | null
