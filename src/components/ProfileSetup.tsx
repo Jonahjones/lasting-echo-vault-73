@@ -87,10 +87,10 @@ export function ProfileSetup({ onComplete }: ProfileSetupProps) {
 
     try {
       const croppedImageBlob = await getCroppedImg(imgRef.current, completedCrop);
-      const fileName = `${user.id}/avatar-${Date.now()}.jpg`;
+      const fileName = `avatars/${user.id}/avatar-${Date.now()}.jpg`;
       
       const { data, error } = await supabase.storage
-        .from('avatars')
+        .from('videos')
         .upload(fileName, croppedImageBlob, {
           cacheControl: '3600',
           upsert: true
@@ -99,7 +99,7 @@ export function ProfileSetup({ onComplete }: ProfileSetupProps) {
       if (error) throw error;
 
       const { data: { publicUrl } } = supabase.storage
-        .from('avatars')
+        .from('videos')
         .getPublicUrl(data.path);
 
       return publicUrl;
