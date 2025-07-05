@@ -108,17 +108,22 @@ export default function Index() {
   return (
     <div className="min-h-screen bg-gradient-comfort pb-20">
       {/* Compassionate Welcome Header */}
-      <div className="pt-12 pb-8 px-6 max-w-lg mx-auto text-center">
-        <div className="mb-6">
-          <div className="w-16 h-16 bg-gradient-primary rounded-full flex items-center justify-center mx-auto mb-4 shadow-gentle animate-gentle-scale">
-            <Heart className="w-8 h-8 text-primary-foreground" />
+      <div className="pt-16 pb-12 px-6 max-w-lg mx-auto text-center">
+        <div className="mb-8">
+          <div className="w-20 h-20 bg-gradient-primary rounded-full flex items-center justify-center mx-auto mb-6 shadow-warm animate-gentle-scale">
+            <Heart className="w-10 h-10 text-primary-foreground" />
           </div>
-          <h1 className="text-3xl font-serif font-light text-foreground mb-2">
+          <h1 className="text-4xl font-serif font-light text-foreground mb-3">
             Hello, {displayProfile.first_name || 'Friend'} 👋
           </h1>
-          <p className="text-lg text-muted-foreground font-medium">
+          <p className="text-xl text-muted-foreground font-medium leading-relaxed">
             Your stories can last forever
           </p>
+          {!isFirstTime && (
+            <p className="text-base text-muted-foreground/80 mt-2">
+              Welcome back. Ready to share a memory?
+            </p>
+          )}
         </div>
 
         {displayProfile.tagline && (
@@ -145,12 +150,12 @@ export default function Index() {
             <div className="w-20 h-20 bg-gradient-primary rounded-full flex items-center justify-center mx-auto mb-6 shadow-warm">
               <Video className="w-10 h-10 text-primary-foreground" />
             </div>
-            <h3 className="text-xl font-serif font-semibold text-foreground mb-3">
+            <h3 className="text-2xl font-serif font-semibold text-foreground mb-3">
               {isFirstTime ? "Start Your Legacy" : "Record a New Legacy Message"}
             </h3>
-            <p className="text-muted-foreground leading-relaxed">
+            <p className="text-muted-foreground leading-relaxed text-base">
               {isFirstTime 
-                ? "Record your first message and begin creating memories that will last forever"
+                ? "Your words can last for generations. Start recording today."
                 : "Your words will bring comfort and wisdom to those you love"
               }
             </p>
@@ -203,20 +208,31 @@ export default function Index() {
         
         {hasVideos ? (
           <div className="grid grid-cols-1 gap-4">
-            {/* Progress Card */}
-            <Card className="shadow-gentle bg-card">
+            {/* Legacy Stats Summary */}
+            <Card className="shadow-gentle bg-gradient-subtle border-primary/20">
               <CardContent className="p-6">
-                <div className="flex items-center space-x-4">
-                  <div className="w-12 h-12 bg-gradient-primary rounded-2xl flex items-center justify-center">
-                    <Sparkles className="w-6 h-6 text-primary-foreground" />
+                <div className="flex items-center space-x-4 mb-4">
+                  <div className="w-14 h-14 bg-gradient-primary rounded-2xl flex items-center justify-center">
+                    <Sparkles className="w-7 h-7 text-primary-foreground" />
                   </div>
                   <div className="flex-1">
-                    <h3 className="font-semibold text-foreground">Legacy Progress</h3>
+                    <h3 className="font-serif font-semibold text-foreground mb-1">Your Legacy Journey</h3>
                     <p className="text-sm text-muted-foreground">
-                      You've created {userStats.total} {userStats.total === 1 ? 'memory' : 'memories'}
+                      You've left {userStats.total} precious {userStats.total === 1 ? 'memory' : 'memories'}—keep building your story
                     </p>
                   </div>
                 </div>
+                
+                {/* Progress visualization */}
+                <div className="bg-muted rounded-full h-2 mb-2">
+                  <div 
+                    className="bg-gradient-primary h-2 rounded-full transition-all duration-500"
+                    style={{ width: `${Math.min((userStats.total / 10) * 100, 100)}%` }}
+                  ></div>
+                </div>
+                <p className="text-xs text-muted-foreground text-center">
+                  {userStats.total < 10 ? `${10 - userStats.total} more to reach your first milestone` : 'Amazing progress! 🎉'}
+                </p>
               </CardContent>
             </Card>
 
@@ -230,9 +246,9 @@ export default function Index() {
                       <Calendar className="w-6 h-6 text-accent-foreground" />
                     </div>
                     <div className="flex-1">
-                      <h3 className="font-semibold text-foreground">Scheduled Messages</h3>
+                      <h3 className="font-semibold text-foreground">Future Messages</h3>
                       <p className="text-sm text-muted-foreground">
-                        {userStats.scheduled} {userStats.scheduled === 1 ? 'message' : 'messages'} will be sent on special days
+                        {userStats.scheduled} {userStats.scheduled === 1 ? 'message will' : 'messages will'} be delivered on special days
                       </p>
                     </div>
                   </div>
@@ -251,10 +267,34 @@ export default function Index() {
                     <div className="flex-1">
                       <h3 className="font-semibold text-foreground">Messages Delivered</h3>
                       <p className="text-sm text-muted-foreground">
-                        {userStats.delivered} {userStats.delivered === 1 ? 'message was' : 'messages were'} delivered
+                        {userStats.delivered} precious {userStats.delivered === 1 ? 'message has' : 'messages have'} reached loved ones
                       </p>
                     </div>
                   </div>
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Gentle Reminder for existing users */}
+            {userStats.total > 0 && (
+              <Card className="shadow-gentle bg-primary/5 border-primary/20">
+                <CardContent className="p-6 text-center">
+                  <h3 className="font-medium text-foreground mb-2">
+                    {userStats.total === 1 
+                      ? "Your first memory is precious—consider adding another" 
+                      : "Your memories are growing—what story will you share next?"
+                    }
+                  </h3>
+                  <p className="text-sm text-muted-foreground mb-4">
+                    Every message you create becomes a treasure for future generations
+                  </p>
+                  <Button 
+                    onClick={() => navigate("/record")}
+                    variant="outline"
+                    className="bg-background/50 hover:bg-primary/10"
+                  >
+                    Record Another Memory
+                  </Button>
                 </CardContent>
               </Card>
             )}
@@ -270,6 +310,7 @@ export default function Index() {
                     <Library className="w-5 h-5 text-primary" />
                   </div>
                   <h4 className="font-medium text-foreground text-sm">My Library</h4>
+                  <p className="text-xs text-muted-foreground">View & edit</p>
                 </CardContent>
               </Card>
 
@@ -282,6 +323,7 @@ export default function Index() {
                     <Users className="w-5 h-5 text-accent-foreground" />
                   </div>
                   <h4 className="font-medium text-foreground text-sm">Contacts</h4>
+                  <p className="text-xs text-muted-foreground">Manage recipients</p>
                 </CardContent>
               </Card>
             </div>
