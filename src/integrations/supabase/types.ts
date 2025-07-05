@@ -11,6 +11,7 @@ export type Database = {
     Tables: {
       contacts: {
         Row: {
+          contact_type: Database["public"]["Enums"]["contact_type"]
           created_at: string
           email: string | null
           full_name: string
@@ -18,10 +19,12 @@ export type Database = {
           is_primary: boolean | null
           phone: string | null
           relationship: string | null
+          role: Database["public"]["Enums"]["trusted_contact_role"] | null
           updated_at: string
           user_id: string
         }
         Insert: {
+          contact_type?: Database["public"]["Enums"]["contact_type"]
           created_at?: string
           email?: string | null
           full_name: string
@@ -29,10 +32,12 @@ export type Database = {
           is_primary?: boolean | null
           phone?: string | null
           relationship?: string | null
+          role?: Database["public"]["Enums"]["trusted_contact_role"] | null
           updated_at?: string
           user_id: string
         }
         Update: {
+          contact_type?: Database["public"]["Enums"]["contact_type"]
           created_at?: string
           email?: string | null
           full_name?: string
@@ -40,6 +45,7 @@ export type Database = {
           is_primary?: boolean | null
           phone?: string | null
           relationship?: string | null
+          role?: Database["public"]["Enums"]["trusted_contact_role"] | null
           updated_at?: string
           user_id?: string
         }
@@ -206,7 +212,8 @@ export type Database = {
       [_ in never]: never
     }
     Enums: {
-      [_ in never]: never
+      contact_type: "trusted" | "regular"
+      trusted_contact_role: "executor" | "legacy_messenger" | "guardian"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -321,6 +328,9 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      contact_type: ["trusted", "regular"],
+      trusted_contact_role: ["executor", "legacy_messenger", "guardian"],
+    },
   },
 } as const
