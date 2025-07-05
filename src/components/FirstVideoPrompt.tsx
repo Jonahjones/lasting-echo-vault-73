@@ -82,9 +82,6 @@ export function FirstVideoPrompt() {
         .update({ first_video_recorded: true })
         .eq('user_id', user.id);
 
-      // Create a notification to encourage recording later
-      await createSkippedFirstVideoNotification();
-
       navigate('/');
     } catch (error) {
       console.error('Error updating profile:', error);

@@ -38,11 +38,10 @@ function AppRoutes() {
     );
   }
 
-  // If user is not authenticated, show auth page (except for admin)
+  // If user is not authenticated, show auth page
   if (!user) {
     return (
       <Routes>
-        <Route path="/admin" element={<Admin />} />
         <Route path="/auth" element={<Auth />} />
         <Route path="*" element={<Auth />} />
       </Routes>
@@ -98,7 +97,10 @@ const App = () => (
             <Sonner />
             <BrowserRouter>
               <div className="min-h-screen bg-background">
-                <AppRoutes />
+                <Routes>
+                  <Route path="/admin" element={<Admin />} />
+                  <Route path="*" element={<AppRoutes />} />
+                </Routes>
               </div>
             </BrowserRouter>
           </TooltipProvider>

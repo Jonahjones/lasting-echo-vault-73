@@ -111,15 +111,6 @@ export default function Record() {
         category: data.category || "wisdom"
       });
 
-      // If this is their first video, create notification for second video
-      if (isFirstVideo) {
-        try {
-          await createSecondVideoNotification();
-        } catch (error) {
-          console.error('Error creating second video notification:', error);
-        }
-      }
-
       toast({
         title: "Message Saved!",
         description: "Your video message has been saved to your library.",
