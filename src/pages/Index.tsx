@@ -6,6 +6,7 @@ import { Heart, Video, Users, Library, Settings, Clock, MessageCircle, Play, Cal
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { VideoDetailModal } from "@/components/VideoDetailModal";
+import { VideoLikeButton } from "@/components/VideoLikeButton";
 
 export default function Index() {
   const { user, profile, isLoading } = useAuth();
@@ -238,10 +239,11 @@ export default function Index() {
                   </p>
                   <div className="flex items-center justify-between text-xs text-muted-foreground">
                     <span>{new Date(video.created_at).toLocaleDateString()}</span>
-                    <div className="flex items-center space-x-1">
-                      <Heart className="w-3 h-3" />
-                      <span>{video.likes_count}</span>
-                    </div>
+                    <VideoLikeButton 
+                      videoId={video.id} 
+                      variant="inline" 
+                      size="sm"
+                    />
                   </div>
                 </CardContent>
               </Card>

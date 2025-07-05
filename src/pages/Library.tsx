@@ -11,6 +11,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { Play, Heart, Search, Globe, Lock, Edit, Trash2, Clock, MessageCircle, Shield, Crown, Star, Check, Zap, Archive, Users, Lightbulb } from "lucide-react";
 import { useVideoLibrary } from "@/contexts/VideoLibraryContext";
 import { EditVideoModal } from "@/components/EditVideoModal";
+import { VideoLikeButton } from "@/components/VideoLikeButton";
 import { useToast } from "@/hooks/use-toast";
 
 const categories = [
@@ -324,7 +325,16 @@ export default function Library() {
                           
                           <div className="flex items-center justify-between text-xs text-muted-foreground">
                             <span>Your Message</span>
-                            <span>{new Date(video.createdAt).toLocaleDateString()}</span>
+                            <div className="flex items-center space-x-2">
+                              <span>{new Date(video.createdAt).toLocaleDateString()}</span>
+                              {video.isPublic && (
+                                <VideoLikeButton 
+                                  videoId={video.id} 
+                                  variant="inline" 
+                                  size="sm"
+                                />
+                              )}
+                            </div>
                           </div>
                         </div>
                       </CardContent>
