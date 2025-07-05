@@ -9,6 +9,33 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      admin_access_logs: {
+        Row: {
+          action: string
+          created_at: string
+          details: Json | null
+          id: string
+          ip_address: string | null
+          user_id: string | null
+        }
+        Insert: {
+          action: string
+          created_at?: string
+          details?: Json | null
+          id?: string
+          ip_address?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          action?: string
+          created_at?: string
+          details?: Json | null
+          id?: string
+          ip_address?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       contacts: {
         Row: {
           contact_type: Database["public"]["Enums"]["contact_type"]
@@ -213,6 +240,7 @@ export type Database = {
           file_path: string | null
           file_size: number | null
           id: string
+          is_featured: boolean
           is_public: boolean
           likes_count: number
           mime_type: string | null
@@ -231,6 +259,7 @@ export type Database = {
           file_path?: string | null
           file_size?: number | null
           id?: string
+          is_featured?: boolean
           is_public?: boolean
           likes_count?: number
           mime_type?: string | null
@@ -249,6 +278,7 @@ export type Database = {
           file_path?: string | null
           file_size?: number | null
           id?: string
+          is_featured?: boolean
           is_public?: boolean
           likes_count?: number
           mime_type?: string | null

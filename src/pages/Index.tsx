@@ -47,11 +47,12 @@ export default function Index() {
         };
         setUserStats(stats);
 
-        // Load inspiring public videos (prioritize recent and most-liked)
+        // Load inspiring public videos (prioritize recent and most-liked, but only featured ones)
         const { data: publicVids } = await supabase
           .from('videos')
           .select('id, title, description, created_at, likes_count, user_id, file_path')
           .eq('is_public', true)
+          .eq('is_featured', true)
           .order('likes_count', { ascending: false })
           .order('created_at', { ascending: false })
           .limit(10);
