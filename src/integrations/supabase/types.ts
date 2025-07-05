@@ -9,6 +9,75 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      contacts: {
+        Row: {
+          created_at: string
+          email: string | null
+          full_name: string
+          id: string
+          is_primary: boolean | null
+          phone: string | null
+          relationship: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          email?: string | null
+          full_name: string
+          id?: string
+          is_primary?: boolean | null
+          phone?: string | null
+          relationship?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          email?: string | null
+          full_name?: string
+          id?: string
+          is_primary?: boolean | null
+          phone?: string | null
+          relationship?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      delivery_logs: {
+        Row: {
+          attempted_at: string
+          contact_id: string
+          delivered_at: string | null
+          delivery_method: string
+          error_message: string | null
+          id: string
+          status: string
+          video_id: string
+        }
+        Insert: {
+          attempted_at?: string
+          contact_id: string
+          delivered_at?: string | null
+          delivery_method: string
+          error_message?: string | null
+          id?: string
+          status: string
+          video_id: string
+        }
+        Update: {
+          attempted_at?: string
+          contact_id?: string
+          delivered_at?: string | null
+          delivery_method?: string
+          error_message?: string | null
+          id?: string
+          status?: string
+          video_id?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           avatar_url: string | null
