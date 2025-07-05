@@ -192,39 +192,37 @@ export default function Library() {
               <TabsTrigger value="storage" className="flex-1">Storage</TabsTrigger>
             </TabsList>
             
-            <TabsContent value="messages" className="space-y-8">
-              {/* Modern, Minimal Filter Bar */}
-              <div className="space-y-6">
-                {/* Search */}
-                <div className="relative max-w-md mx-auto">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+            <TabsContent value="messages" className="space-y-6">
+              {/* Sleek, Minimal Filter Bar */}
+              <div className="space-y-4">
+                {/* Compact Search */}
+                <div className="relative max-w-xs mx-auto">
+                  <Search className="absolute left-2.5 top-1/2 transform -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground/60" />
                   <Input
-                    placeholder="Search messages..."
+                    placeholder="Search..."
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
-                    className="pl-10 bg-background border-border"
+                    className="pl-8 pr-3 py-1.5 h-8 text-sm bg-muted/30 border-0 rounded-full placeholder:text-muted-foreground/50 focus:bg-background focus:ring-1 focus:ring-primary/20 transition-all duration-200"
                   />
                 </div>
 
-                {/* Pill-Style Category Filters */}
-                <div className="flex overflow-x-auto scrollbar-hide gap-2 pb-2">
+                {/* Refined Category Pills */}
+                <div className="flex overflow-x-auto scrollbar-hide gap-1.5 pb-1 px-1">
                   {categories.map((category) => {
                     const isSelected = selectedCategory === category.value;
                     return (
-                      <Button
+                      <button
                         key={category.value}
-                        variant={isSelected ? "default" : "ghost"}
-                        size="sm"
                         onClick={() => setSelectedCategory(category.value)}
-                        className={`flex items-center space-x-2 min-w-fit px-4 py-2 rounded-full border transition-all duration-200 ${
+                        className={`flex items-center space-x-1.5 min-w-fit px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition-all duration-200 ${
                           isSelected 
-                            ? "bg-primary text-primary-foreground shadow-sm border-primary" 
-                            : "bg-background border-border hover:bg-muted hover:border-primary/30"
+                            ? "bg-primary text-primary-foreground shadow-sm" 
+                            : "bg-muted/40 text-muted-foreground hover:bg-muted/60 hover:text-foreground"
                         }`}
                       >
-                        <span className="text-sm">{category.emoji}</span>
-                        <span className="text-sm font-medium whitespace-nowrap">{category.label}</span>
-                      </Button>
+                        <span className="text-xs">{category.emoji}</span>
+                        <span>{category.label}</span>
+                      </button>
                     );
                   })}
                 </div>
