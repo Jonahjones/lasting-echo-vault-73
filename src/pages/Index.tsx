@@ -162,19 +162,6 @@ export default function Index() {
             </p>
           )}
         </div>
-
-        {displayProfile.tagline && (
-          <Card className="mb-8 bg-primary/5 border-primary/20 shadow-gentle">
-            <CardContent className="pt-6">
-              <div className="flex items-start space-x-3">
-                <MessageCircle className="w-5 h-5 text-primary mt-0.5 flex-shrink-0" />
-                <p className="text-sm font-medium text-foreground italic leading-relaxed">
-                  "{displayProfile.tagline}"
-                </p>
-              </div>
-            </CardContent>
-          </Card>
-        )}
       </div>
 
       {/* Primary Call to Action */}
