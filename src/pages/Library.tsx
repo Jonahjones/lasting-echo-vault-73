@@ -7,17 +7,18 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Progress } from "@/components/ui/progress";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Play, Heart, Search, Globe, Lock, Edit, Trash2, Clock, MessageCircle, Shield, Crown, Star, Check, Zap, Archive, Users } from "lucide-react";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Play, Heart, Search, Globe, Lock, Edit, Trash2, Clock, MessageCircle, Shield, Crown, Star, Check, Zap, Archive, Users, Lightbulb } from "lucide-react";
 import { useVideoLibrary } from "@/contexts/VideoLibraryContext";
 import { EditVideoModal } from "@/components/EditVideoModal";
 import { useToast } from "@/hooks/use-toast";
 
 const categories = [
-  { value: "all", label: "All Messages", icon: Globe },
-  { value: "wisdom", label: "Wisdom", icon: Heart },
-  { value: "story", label: "Stories", icon: MessageCircle },
-  { value: "love", label: "Love", icon: Heart },
-  { value: "advice", label: "Advice", icon: Clock }
+  { value: "all", label: "All Messages", icon: Globe, emoji: "🌍" },
+  { value: "wisdom", label: "Wisdom", icon: Lightbulb, emoji: "💡" },
+  { value: "story", label: "Stories", icon: MessageCircle, emoji: "📖" },
+  { value: "love", label: "Love", icon: Heart, emoji: "❤️" },
+  { value: "advice", label: "Advice", icon: Clock, emoji: "⏰" }
 ];
 
 interface StoragePlan {
@@ -92,6 +93,7 @@ export default function Library() {
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [editingVideo, setEditingVideo] = useState<string | null>(null);
   const [selectedPlan, setSelectedPlan] = useState<string | null>(null);
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false);
   const [currentUsage] = useState({
     videos: 3,
     storage: 1.2, // GB
@@ -149,32 +151,33 @@ export default function Library() {
             </p>
           </div>
 
-          {/* Usage Allowance & Upgrade CTA */}
-          <Card className="bg-gradient-to-r from-yellow-50 to-orange-50 border-yellow-200 shadow-gentle mb-8 relative">
+          {/* Smart, Compact CTA Card */}
+          <Card className="bg-gradient-to-r from-amber-50 to-yellow-50 border-amber-200/50 shadow-gentle mb-8 relative overflow-hidden">
+            <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-br from-yellow-200/20 to-amber-300/20 rounded-full -translate-y-8 translate-x-8"></div>
             <Button
               variant="ghost"
               size="sm"
-              className="absolute top-2 right-2 w-6 h-6 p-0 text-muted-foreground hover:text-foreground"
+              className="absolute top-2 right-2 w-6 h-6 p-0 text-muted-foreground/60 hover:text-muted-foreground z-10"
             >
               <span className="sr-only">Dismiss</span>×
             </Button>
-            <CardContent className="p-4">
-              <div className="flex items-center space-x-3">
-                <div className="w-10 h-10 bg-yellow-100 rounded-full flex items-center justify-center">
-                  <Crown className="w-5 h-5 text-yellow-600" />
+            <CardContent className="p-5 relative z-10">
+              <div className="flex items-start space-x-4">
+                <div className="w-12 h-12 bg-gradient-to-br from-yellow-400 to-amber-500 rounded-xl flex items-center justify-center shadow-sm">
+                  <Crown className="w-6 h-6 text-white" />
                 </div>
-                <div className="flex-1">
-                  <p className="font-medium text-foreground mb-1">
-                    You can record {currentUsage.maxVideos - currentUsage.videos} more video{currentUsage.maxVideos - currentUsage.videos === 1 ? '' : 's'} with your current plan.
+                <div className="flex-1 min-w-0">
+                  <p className="font-semibold text-foreground mb-1 text-base">
+                    You're just {currentUsage.maxVideos - currentUsage.videos} video{currentUsage.maxVideos - currentUsage.videos === 1 ? '' : 's'} away from your limit.
                   </p>
-                  <p className="text-sm text-muted-foreground mb-3">
-                    Unlock unlimited messages and cherish every moment—go Premium!
+                  <p className="text-sm text-muted-foreground mb-4 leading-relaxed">
+                    Go Premium for unlimited recordings, priority support, and enhanced storage.
                   </p>
                   <Button 
-                    size="sm" 
-                    className="bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-600 hover:to-orange-600 text-white"
+                    onClick={() => setShowUpgradeModal(true)}
+                    className="w-full bg-gradient-to-r from-yellow-500 to-amber-600 hover:from-yellow-600 hover:to-amber-700 text-white font-medium shadow-sm hover:shadow-md transition-all duration-200"
                   >
-                    <Star className="w-4 h-4 mr-2" />
+                    <Crown className="w-4 h-4 mr-2" />
                     Upgrade to Premium
                   </Button>
                 </div>
@@ -190,44 +193,41 @@ export default function Library() {
             </TabsList>
             
             <TabsContent value="messages" className="space-y-8">
-              {/* ... keep existing code (filters and videos grid) */}
-              {/* Filters */}
-              <div>
-                <Card className="shadow-card">
-                  <CardContent className="p-6">
-                    <div className="flex flex-col lg:flex-row gap-4 items-center">
-                      {/* Search */}
-                      <div className="relative flex-1 max-w-md">
-                        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                        <Input
-                          placeholder="Search messages..."
-                          value={searchTerm}
-                          onChange={(e) => setSearchTerm(e.target.value)}
-                          className="pl-10"
-                        />
-                      </div>
+              {/* Modern, Minimal Filter Bar */}
+              <div className="space-y-6">
+                {/* Search */}
+                <div className="relative max-w-md mx-auto">
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                  <Input
+                    placeholder="Search messages..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="pl-10 bg-background border-border"
+                  />
+                </div>
 
-                      {/* Category Filter */}
-                      <div className="flex flex-wrap gap-2">
-                        {categories.map((category) => {
-                          const IconComponent = category.icon;
-                          return (
-                            <Button
-                              key={category.value}
-                              variant={selectedCategory === category.value ? "default" : "outline"}
-                              size="sm"
-                              onClick={() => setSelectedCategory(category.value)}
-                              className="flex items-center space-x-1"
-                            >
-                              <IconComponent className="w-4 h-4" />
-                              <span>{category.label}</span>
-                            </Button>
-                          );
-                        })}
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
+                {/* Pill-Style Category Filters */}
+                <div className="flex overflow-x-auto scrollbar-hide gap-2 pb-2">
+                  {categories.map((category) => {
+                    const isSelected = selectedCategory === category.value;
+                    return (
+                      <Button
+                        key={category.value}
+                        variant={isSelected ? "default" : "ghost"}
+                        size="sm"
+                        onClick={() => setSelectedCategory(category.value)}
+                        className={`flex items-center space-x-2 min-w-fit px-4 py-2 rounded-full border transition-all duration-200 ${
+                          isSelected 
+                            ? "bg-primary text-primary-foreground shadow-sm border-primary" 
+                            : "bg-background border-border hover:bg-muted hover:border-primary/30"
+                        }`}
+                      >
+                        <span className="text-sm">{category.emoji}</span>
+                        <span className="text-sm font-medium whitespace-nowrap">{category.label}</span>
+                      </Button>
+                    );
+                  })}
+                </div>
               </div>
 
               {/* Videos Grid */}
@@ -575,6 +575,94 @@ export default function Library() {
           video={editingVideoData}
         />
       )}
+
+      {/* Upgrade Modal */}
+      <Dialog open={showUpgradeModal} onOpenChange={setShowUpgradeModal}>
+        <DialogContent className="max-w-md mx-auto">
+          <DialogHeader>
+            <div className="w-16 h-16 bg-gradient-to-br from-yellow-400 to-amber-500 rounded-full flex items-center justify-center mx-auto mb-4">
+              <Crown className="w-8 h-8 text-white" />
+            </div>
+            <DialogTitle className="text-center text-2xl font-bold">
+              Unlock Premium Legacy
+            </DialogTitle>
+            <DialogDescription className="text-center text-muted-foreground">
+              Never worry about running out of space for your memories!
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-6 py-4">
+            {/* Premium Features */}
+            <div className="space-y-4">
+              <div className="flex items-center space-x-3">
+                <div className="w-8 h-8 bg-primary/10 rounded-lg flex items-center justify-center">
+                  <Zap className="w-4 h-4 text-primary" />
+                </div>
+                <div>
+                  <p className="font-medium text-foreground">Unlimited video recordings</p>
+                  <p className="text-sm text-muted-foreground">No limits on your legacy messages</p>
+                </div>
+              </div>
+              
+              <div className="flex items-center space-x-3">
+                <div className="w-8 h-8 bg-primary/10 rounded-lg flex items-center justify-center">
+                  <Shield className="w-4 h-4 text-primary" />
+                </div>
+                <div>
+                  <p className="font-medium text-foreground">Priority support</p>
+                  <p className="text-sm text-muted-foreground">Get help when you need it most</p>
+                </div>
+              </div>
+              
+              <div className="flex items-center space-x-3">
+                <div className="w-8 h-8 bg-primary/10 rounded-lg flex items-center justify-center">
+                  <Archive className="w-4 h-4 text-primary" />
+                </div>
+                <div>
+                  <p className="font-medium text-foreground">Enhanced storage</p>
+                  <p className="text-sm text-muted-foreground">Store all your precious moments safely</p>
+                </div>
+              </div>
+              
+              <div className="flex items-center space-x-3">
+                <div className="w-8 h-8 bg-primary/10 rounded-lg flex items-center justify-center">
+                  <Star className="w-4 h-4 text-primary" />
+                </div>
+                <div>
+                  <p className="font-medium text-foreground">Early access to new features</p>
+                  <p className="text-sm text-muted-foreground">Be first to experience innovations</p>
+                </div>
+              </div>
+            </div>
+
+            {/* Pricing */}
+            <div className="bg-gradient-to-r from-amber-50 to-yellow-50 border border-amber-200/50 rounded-lg p-4 text-center">
+              <div className="text-3xl font-bold text-foreground mb-1">$149</div>
+              <div className="text-sm text-muted-foreground mb-2">One-time payment • Lifetime access</div>
+              <div className="text-xs text-muted-foreground">30-day money-back guarantee</div>
+            </div>
+
+            {/* Action Buttons */}
+            <div className="space-y-3">
+              <Button 
+                className="w-full bg-gradient-to-r from-yellow-500 to-amber-600 hover:from-yellow-600 hover:to-amber-700 text-white font-medium shadow-sm hover:shadow-md transition-all duration-200"
+                size="lg"
+              >
+                <Crown className="w-4 h-4 mr-2" />
+                Secure Your Premium Legacy
+              </Button>
+              
+              <Button 
+                variant="ghost" 
+                className="w-full" 
+                onClick={() => setShowUpgradeModal(false)}
+              >
+                Maybe Later
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
