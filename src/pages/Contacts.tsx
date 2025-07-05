@@ -340,6 +340,174 @@ export default function Contacts() {
                 Add New Contact
               </Button>
             </DialogTrigger>
+            
+            {/* Add/Edit Contact Modal */}
+            <DialogContent className="max-w-md mx-auto max-h-[90vh] overflow-y-auto m-4">
+              <DialogHeader>
+                <DialogTitle className="text-xl font-bold">
+                  {editingContact ? "Edit Contact" : "Add New Contact"}
+                </DialogTitle>
+                <p className="text-sm text-muted-foreground">
+                  Choose contact type and provide their information
+                </p>
+              </DialogHeader>
+
+              <div className="space-y-6 py-4">
+                {/* Contact Type Selection */}
+                <div className="space-y-3">
+                  <Label className="text-base font-medium">Contact Type</Label>
+                  <RadioGroup
+                    value={contactForm.contact_type}
+                    onValueChange={(value) => setContactForm(prev => ({ 
+                      ...prev, 
+                      contact_type: value as 'trusted' | 'regular',
+                      role: value === 'regular' ? undefined : prev.role,
+                      is_primary: value === 'regular' ? false : prev.is_primary
+                    }))}
+                    className="grid grid-cols-1 gap-3"
+                  >
+                    <div className="flex items-start space-x-3 p-3 border rounded-lg hover:bg-muted/50 transition-colors">
+                      <RadioGroupItem value="trusted" id="trusted" className="mt-1" />
+                      <div className="flex-1">
+                        <Label htmlFor="trusted" className="text-sm font-medium flex items-center">
+                          <Shield className="w-4 h-4 mr-2 text-primary" />
+                          Trusted Contact
+                        </Label>
+                        <p className="text-xs text-muted-foreground mt-1">
+                          Can help deliver messages and manage your wishes. Requires email and phone.
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex items-start space-x-3 p-3 border rounded-lg hover:bg-muted/50 transition-colors">
+                      <RadioGroupItem value="regular" id="regular" className="mt-1" />
+                      <div className="flex-1">
+                        <Label htmlFor="regular" className="text-sm font-medium flex items-center">
+                          <Heart className="w-4 h-4 mr-2 text-primary" />
+                          Regular Contact
+                        </Label>
+                        <p className="text-xs text-muted-foreground mt-1">
+                          Can receive your memories but cannot manage deliveries.
+                        </p>
+                      </div>
+                    </div>
+                  </RadioGroup>
+                </div>
+
+                {/* Role Selection for Trusted Contacts */}
+                {contactForm.contact_type === 'trusted' && (
+                  <div className="space-y-2">
+                    <Label htmlFor="role">Role</Label>
+                    <Select value={contactForm.role} onValueChange={(value) => setContactForm(prev => ({ ...prev, role: value as any }))}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select a role" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="executor">
+                          <div className="flex items-center">
+                            <Crown className="w-4 h-4 mr-2" />
+                            Executor
+                          </div>
+                        </SelectItem>
+                        <SelectItem value="legacy_messenger">
+                          <div className="flex items-center">
+                            <Star className="w-4 h-4 mr-2" />
+                            Legacy Messenger
+                          </div>
+                        </SelectItem>
+                        <SelectItem value="guardian">
+                          <div className="flex items-center">
+                            <Shield className="w-4 h-4 mr-2" />
+                            Guardian
+                          </div>
+                        </SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
+
+                {/* Contact Information */}
+                <div className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="full_name">Full Name</Label>
+                    <Input
+                      id="full_name"
+                      value={contactForm.full_name}
+                      onChange={(e) => setContactForm(prev => ({ ...prev, full_name: e.target.value }))}
+                      placeholder="Enter full name"
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="relationship">Relationship</Label>
+                    <Input
+                      id="relationship"
+                      value={contactForm.relationship}
+                      onChange={(e) => setContactForm(prev => ({ ...prev, relationship: e.target.value }))}
+                      placeholder="e.g. Daughter, Son, Spouse"
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="email">
+                      Email Address
+                      {contactForm.contact_type === 'trusted' && <span className="text-destructive ml-1">*</span>}
+                    </Label>
+                    <Input
+                      id="email"
+                      type="email"
+                      value={contactForm.email}
+                      onChange={(e) => setContactForm(prev => ({ ...prev, email: e.target.value }))}
+                      placeholder="Enter email address"
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="phone">
+                      Phone Number
+                      {contactForm.contact_type === 'trusted' && <span className="text-destructive ml-1">*</span>}
+                    </Label>
+                    <Input
+                      id="phone"
+                      type="tel"
+                      value={contactForm.phone}
+                      onChange={(e) => setContactForm(prev => ({ ...prev, phone: e.target.value }))}
+                      placeholder="Enter phone number"
+                    />
+                  </div>
+
+                  {contactForm.contact_type === 'trusted' && (
+                    <div className="flex items-center space-x-2">
+                      <input
+                        type="checkbox"
+                        id="is_primary"
+                        checked={contactForm.is_primary}
+                        onChange={(e) => setContactForm(prev => ({ ...prev, is_primary: e.target.checked }))}
+                        className="rounded border-border"
+                      />
+                      <Label htmlFor="is_primary" className="text-sm">
+                        Set as Primary Contact
+                      </Label>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              <div className="flex flex-col sm:flex-row gap-3 pt-4">
+                <Button 
+                  onClick={handleSaveContact}
+                  className="flex-1"
+                >
+                  {editingContact ? "Update Contact" : "Add Contact"}
+                </Button>
+                <Button 
+                  variant="outline" 
+                  onClick={resetForm}
+                  className="flex-1"
+                >
+                  Cancel
+                </Button>
+              </div>
+            </DialogContent>
           </Dialog>
         </div>
 
@@ -589,174 +757,6 @@ export default function Contacts() {
           </CardContent>
         </Card>
       </div>
-
-      {/* Add/Edit Contact Modal */}
-      <DialogContent className="max-w-md mx-auto max-h-[90vh] overflow-y-auto m-4">
-        <DialogHeader>
-          <DialogTitle className="text-xl font-bold">
-            {editingContact ? "Edit Contact" : "Add New Contact"}
-          </DialogTitle>
-          <p className="text-sm text-muted-foreground">
-            Choose contact type and provide their information
-          </p>
-        </DialogHeader>
-
-        <div className="space-y-6 py-4">
-          {/* Contact Type Selection */}
-          <div className="space-y-3">
-            <Label className="text-base font-medium">Contact Type</Label>
-            <RadioGroup
-              value={contactForm.contact_type}
-              onValueChange={(value) => setContactForm(prev => ({ 
-                ...prev, 
-                contact_type: value as 'trusted' | 'regular',
-                role: value === 'regular' ? undefined : prev.role,
-                is_primary: value === 'regular' ? false : prev.is_primary
-              }))}
-              className="grid grid-cols-1 gap-3"
-            >
-              <div className="flex items-start space-x-3 p-3 border rounded-lg hover:bg-muted/50 transition-colors">
-                <RadioGroupItem value="trusted" id="trusted" className="mt-1" />
-                <div className="flex-1">
-                  <Label htmlFor="trusted" className="text-sm font-medium flex items-center">
-                    <Shield className="w-4 h-4 mr-2 text-primary" />
-                    Trusted Contact
-                  </Label>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    Can help deliver messages and manage your wishes. Requires email and phone.
-                  </p>
-                </div>
-              </div>
-              <div className="flex items-start space-x-3 p-3 border rounded-lg hover:bg-muted/50 transition-colors">
-                <RadioGroupItem value="regular" id="regular" className="mt-1" />
-                <div className="flex-1">
-                  <Label htmlFor="regular" className="text-sm font-medium flex items-center">
-                    <Heart className="w-4 h-4 mr-2 text-primary" />
-                    Regular Contact
-                  </Label>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    Can receive your memories but cannot manage deliveries.
-                  </p>
-                </div>
-              </div>
-            </RadioGroup>
-          </div>
-
-          {/* Role Selection for Trusted Contacts */}
-          {contactForm.contact_type === 'trusted' && (
-            <div className="space-y-2">
-              <Label htmlFor="role">Role</Label>
-              <Select value={contactForm.role} onValueChange={(value) => setContactForm(prev => ({ ...prev, role: value as any }))}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select a role" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="executor">
-                    <div className="flex items-center">
-                      <Crown className="w-4 h-4 mr-2" />
-                      Executor
-                    </div>
-                  </SelectItem>
-                  <SelectItem value="legacy_messenger">
-                    <div className="flex items-center">
-                      <Star className="w-4 h-4 mr-2" />
-                      Legacy Messenger
-                    </div>
-                  </SelectItem>
-                  <SelectItem value="guardian">
-                    <div className="flex items-center">
-                      <Shield className="w-4 h-4 mr-2" />
-                      Guardian
-                    </div>
-                  </SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          )}
-
-          {/* Contact Information */}
-          <div className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="full_name">Full Name</Label>
-              <Input
-                id="full_name"
-                value={contactForm.full_name}
-                onChange={(e) => setContactForm(prev => ({ ...prev, full_name: e.target.value }))}
-                placeholder="Enter full name"
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="relationship">Relationship</Label>
-              <Input
-                id="relationship"
-                value={contactForm.relationship}
-                onChange={(e) => setContactForm(prev => ({ ...prev, relationship: e.target.value }))}
-                placeholder="e.g. Daughter, Son, Spouse"
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="email">
-                Email Address
-                {contactForm.contact_type === 'trusted' && <span className="text-destructive ml-1">*</span>}
-              </Label>
-              <Input
-                id="email"
-                type="email"
-                value={contactForm.email}
-                onChange={(e) => setContactForm(prev => ({ ...prev, email: e.target.value }))}
-                placeholder="Enter email address"
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="phone">
-                Phone Number
-                {contactForm.contact_type === 'trusted' && <span className="text-destructive ml-1">*</span>}
-              </Label>
-              <Input
-                id="phone"
-                type="tel"
-                value={contactForm.phone}
-                onChange={(e) => setContactForm(prev => ({ ...prev, phone: e.target.value }))}
-                placeholder="Enter phone number"
-              />
-            </div>
-
-            {contactForm.contact_type === 'trusted' && (
-              <div className="flex items-center space-x-2">
-                <input
-                  type="checkbox"
-                  id="is_primary"
-                  checked={contactForm.is_primary}
-                  onChange={(e) => setContactForm(prev => ({ ...prev, is_primary: e.target.checked }))}
-                  className="rounded border-border"
-                />
-                <Label htmlFor="is_primary" className="text-sm">
-                  Set as Primary Contact
-                </Label>
-              </div>
-            )}
-          </div>
-        </div>
-
-        <div className="flex flex-col sm:flex-row gap-3 pt-4">
-          <Button 
-            onClick={handleSaveContact}
-            className="flex-1"
-          >
-            {editingContact ? "Update Contact" : "Add Contact"}
-          </Button>
-          <Button 
-            variant="outline" 
-            onClick={resetForm}
-            className="flex-1"
-          >
-            Cancel
-          </Button>
-        </div>
-      </DialogContent>
     </div>
   );
 }
