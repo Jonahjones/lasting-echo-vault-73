@@ -154,11 +154,11 @@ export default function Index() {
             Hello, {displayProfile.first_name || 'Friend'} 👋
           </h1>
           <p className="text-xl text-muted-foreground font-medium leading-relaxed">
-            Your stories can last forever
+            Capture life's meaningful moments
           </p>
           {!isFirstTime && (
             <p className="text-base text-muted-foreground/80 mt-2">
-              Welcome back. Ready to share a memory?
+              Welcome back. What story will you share today?
             </p>
           )}
         </div>
@@ -188,12 +188,12 @@ export default function Index() {
               <Video className="w-10 h-10 text-primary-foreground" />
             </div>
             <h3 className="text-2xl font-serif font-semibold text-foreground mb-3">
-              {isFirstTime ? "Start Your Legacy" : "Record a New Legacy Message"}
+              {isFirstTime ? "Start Your Memory Journal" : "Record a New Memory"}
             </h3>
             <p className="text-muted-foreground leading-relaxed text-base">
               {isFirstTime 
-                ? "Your words can last for generations. Start recording today."
-                : "Your words will bring comfort and wisdom to those you love"
+                ? "Capture moments that matter. Share wisdom, gratitude, and joy."
+                : "What moment, lesson, or feeling would you like to preserve today?"
               }
             </p>
           </CardContent>
@@ -204,10 +204,10 @@ export default function Index() {
       <div className="mb-8">
         <div className="px-6 mb-4 max-w-lg mx-auto">
           <h2 className="text-lg font-serif font-medium text-foreground mb-2">
-            Stories That Inspire
+            Moments That Inspire
           </h2>
           <p className="text-sm text-muted-foreground">
-            See how others are remembered
+            See how others are sharing their stories
           </p>
         </div>
         
@@ -268,13 +268,13 @@ export default function Index() {
                   <Heart className="w-8 h-8 text-muted-foreground" />
                 </div>
                 <h3 className="font-medium text-foreground mb-2">
-                  No public memories here yet
+                  No shared stories yet
                 </h3>
                 <p className="text-sm text-muted-foreground mb-4">
-                  Make your message public to inspire others!
+                  Share your story to inspire others!
                 </p>
                 <p className="text-xs text-muted-foreground">
-                  Want to inspire others? Mark your message public in the details screen!
+                  Want to inspire others? Make your story public to share your wisdom
                 </p>
               </CardContent>
             </Card>
@@ -285,7 +285,7 @@ export default function Index() {
         {displayedVideos.length > 0 && (
           <div className="px-6 mt-4 max-w-lg mx-auto text-center">
             <p className="text-xs text-muted-foreground">
-              Share your story with the world—make your message public for others to see
+              Share your wisdom with the world—make your story public for others to see
             </p>
           </div>
         )}
@@ -294,7 +294,7 @@ export default function Index() {
       {/* Your Journey Section */}
       <div className="px-6 space-y-4 max-w-lg mx-auto">
         <h2 className="text-lg font-serif font-medium text-foreground mb-4">
-          Your Journey
+          Your Story Collection
         </h2>
         
         {hasVideos ? (
@@ -307,9 +307,9 @@ export default function Index() {
                     <Sparkles className="w-7 h-7 text-primary-foreground" />
                   </div>
                   <div className="flex-1">
-                    <h3 className="font-serif font-semibold text-foreground mb-1">Your Legacy Journey</h3>
+                    <h3 className="font-serif font-semibold text-foreground mb-1">Your Memory Collection</h3>
                     <p className="text-sm text-muted-foreground">
-                      You've left {userStats.total} precious {userStats.total === 1 ? 'memory' : 'memories'}—keep building your story
+                      You've captured {userStats.total} precious {userStats.total === 1 ? 'moment' : 'moments'}—keep sharing your story
                     </p>
                   </div>
                 </div>
@@ -337,9 +337,9 @@ export default function Index() {
                       <Calendar className="w-6 h-6 text-accent-foreground" />
                     </div>
                     <div className="flex-1">
-                      <h3 className="font-semibold text-foreground">Future Messages</h3>
+                      <h3 className="font-semibold text-foreground">Scheduled Stories</h3>
                       <p className="text-sm text-muted-foreground">
-                        {userStats.scheduled} {userStats.scheduled === 1 ? 'message will' : 'messages will'} be delivered on special days
+                        {userStats.scheduled} {userStats.scheduled === 1 ? 'story is' : 'stories are'} scheduled to be shared on special days
                       </p>
                     </div>
                   </div>
@@ -356,9 +356,9 @@ export default function Index() {
                       <Clock className="w-6 h-6 text-secondary-foreground" />
                     </div>
                     <div className="flex-1">
-                      <h3 className="font-semibold text-foreground">Messages Delivered</h3>
+                      <h3 className="font-semibold text-foreground">Stories Shared</h3>
                       <p className="text-sm text-muted-foreground">
-                        {userStats.delivered} precious {userStats.delivered === 1 ? 'message has' : 'messages have'} reached loved ones
+                        {userStats.delivered} meaningful {userStats.delivered === 1 ? 'story has' : 'stories have'} reached loved ones
                       </p>
                     </div>
                   </div>
@@ -372,19 +372,19 @@ export default function Index() {
                 <CardContent className="p-6 text-center">
                   <h3 className="font-medium text-foreground mb-2">
                     {userStats.total === 1 
-                      ? "Your first memory is precious—consider adding another" 
-                      : "Your memories are growing—what story will you share next?"
+                      ? "Your first story is beautiful—what will you share next?" 
+                      : "Your collection is growing—what moment sparked joy today?"
                     }
                   </h3>
                   <p className="text-sm text-muted-foreground mb-4">
-                    Every message you create becomes a treasure for future generations
+                    Every story you capture becomes a gift of wisdom and connection
                   </p>
                   <Button 
                     onClick={() => navigate("/record")}
                     variant="outline"
                     className="bg-background/50 hover:bg-primary/10"
                   >
-                    Record Another Memory
+                    Capture Another Moment
                   </Button>
                 </CardContent>
               </Card>

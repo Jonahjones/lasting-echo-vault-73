@@ -62,7 +62,7 @@ export function FirstVideoPrompt() {
           <div className="w-12 h-12 bg-gradient-primary rounded-2xl flex items-center justify-center shadow-gentle">
             <Heart className="w-6 h-6 text-primary-foreground" />
           </div>
-          <h1 className="text-2xl font-serif font-light text-foreground">One Final Moment</h1>
+          <h1 className="text-2xl font-serif font-light text-foreground">Memory Journal</h1>
         </div>
       </div>
 
@@ -76,10 +76,10 @@ export function FirstVideoPrompt() {
               </div>
               <div className="space-y-4">
                 <CardTitle className="text-3xl font-serif font-light text-foreground leading-relaxed">
-                  Ready to create your first legacy message?
+                  Ready to capture your first meaningful moment?
                 </CardTitle>
                 <CardDescription className="text-lg text-muted-foreground leading-relaxed max-w-lg mx-auto">
-                  Take a moment to record something meaningful for your loved ones. Whether it's words of wisdom, a cherished memory, or simply "I love you" – your voice matters.
+                  Take a moment to record something special. Whether it's words of wisdom, a cherished memory, gratitude, or simply "I love you" – your voice matters.
                 </CardDescription>
               </div>
               
@@ -89,7 +89,7 @@ export function FirstVideoPrompt() {
                   <Sparkles className="w-6 h-6 text-primary flex-shrink-0" />
                   <div className="text-left">
                     <p className="text-sm font-medium text-foreground">Share Your Wisdom</p>
-                    <p className="text-xs text-muted-foreground">Life lessons you've learned</p>
+                    <p className="text-xs text-muted-foreground">Life lessons that inspire</p>
                   </div>
                 </div>
                 
@@ -97,15 +97,15 @@ export function FirstVideoPrompt() {
                   <Clock className="w-6 h-6 text-accent-foreground flex-shrink-0" />
                   <div className="text-left">
                     <p className="text-sm font-medium text-foreground">Cherished Memory</p>
-                    <p className="text-xs text-muted-foreground">A special moment to preserve</p>
+                    <p className="text-xs text-muted-foreground">A moment that brings joy</p>
                   </div>
                 </div>
                 
                 <div className="flex items-center space-x-3 p-4 bg-primary/5 rounded-xl border border-primary/10">
                   <Users className="w-6 h-6 text-primary flex-shrink-0" />
                   <div className="text-left">
-                    <p className="text-sm font-medium text-foreground">Words of Love</p>
-                    <p className="text-xs text-muted-foreground">Express your feelings</p>
+                    <p className="text-sm font-medium text-foreground">Words of Gratitude</p>
+                    <p className="text-xs text-muted-foreground">What you're thankful for today</p>
                   </div>
                 </div>
               </div>
@@ -124,7 +124,7 @@ export function FirstVideoPrompt() {
                   ) : (
                     <>
                       <Video className="w-6 h-6 mr-3" />
-                      Start Recording Your First Message
+                      Capture Your First Memory
                       <ArrowRight className="w-6 h-6 ml-3" />
                     </>
                   )}
@@ -141,7 +141,7 @@ export function FirstVideoPrompt() {
               
               <div className="text-center mt-8">
                 <p className="text-sm text-muted-foreground leading-relaxed">
-                  Don't worry about being perfect. Your authentic voice and genuine emotions are what make these messages precious. You can always record more messages later.
+                  Don't worry about being perfect. Your authentic voice and genuine emotions are what make these moments precious. You can always record more memories later.
                 </p>
               </div>
             </CardContent>

@@ -135,7 +135,7 @@ export function ProfileSetup({ onComplete }: ProfileSetupProps) {
 
       toast({
         title: "Profile Created Successfully",
-        description: "Welcome to One Final Moment. Let's record your first legacy message.",
+        description: "Welcome to Memory Journal. Let's capture your first meaningful moment.",
       });
 
       onComplete();
@@ -175,7 +175,7 @@ export function ProfileSetup({ onComplete }: ProfileSetupProps) {
           <div className="w-12 h-12 bg-gradient-primary rounded-2xl flex items-center justify-center shadow-gentle">
             <Heart className="w-6 h-6 text-primary-foreground" />
           </div>
-          <h1 className="text-2xl font-serif font-light text-foreground">One Final Moment</h1>
+          <h1 className="text-2xl font-serif font-light text-foreground">Memory Journal</h1>
         </div>
       </div>
 
@@ -207,7 +207,7 @@ export function ProfileSetup({ onComplete }: ProfileSetupProps) {
                     Tell us about yourself
                   </CardTitle>
                   <CardDescription className="text-base text-muted-foreground leading-relaxed">
-                    Help us personalize your legacy experience with your name and details.
+                    Help us personalize your memory journal experience with your name and details.
                   </CardDescription>
                 </CardHeader>
                 
@@ -256,7 +256,7 @@ export function ProfileSetup({ onComplete }: ProfileSetupProps) {
                     Add your photo
                   </CardTitle>
                   <CardDescription className="text-base text-muted-foreground leading-relaxed">
-                    Upload a photo so your loved ones can see your face when they receive your messages.
+                    Upload a photo so your loved ones can see your face when they receive your memories.
                   </CardDescription>
                 </CardHeader>
                 
@@ -342,10 +342,10 @@ export function ProfileSetup({ onComplete }: ProfileSetupProps) {
                     <MessageCircle className="w-8 h-8 text-primary-foreground" />
                   </div>
                   <CardTitle className="text-2xl font-serif font-light text-foreground">
-                    Your legacy tagline
+                    Your personal tagline
                   </CardTitle>
                   <CardDescription className="text-base text-muted-foreground leading-relaxed">
-                    Add a meaningful phrase that captures your spirit. This will appear with your messages.
+                    Add a meaningful phrase that captures your spirit. This will appear with your stories.
                   </CardDescription>
                 </CardHeader>
                 
