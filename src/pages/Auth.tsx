@@ -17,6 +17,20 @@ export default function Auth() {
   const navigate = useNavigate();
   const { toast } = useToast();
 
+  // Check for logout success parameter
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.get('logout') === 'success') {
+      toast({
+        title: "Successfully logged out",
+        description: "You've been logged out. See you again soon! 👋",
+        duration: 4000,
+      });
+      // Clean up the URL
+      window.history.replaceState({}, document.title, window.location.pathname);
+    }
+  }, [toast]);
+
   // Redirect authenticated users to home
   useEffect(() => {
     if (user) {

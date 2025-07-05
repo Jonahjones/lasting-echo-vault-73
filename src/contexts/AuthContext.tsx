@@ -132,8 +132,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const logout = async () => {
-    await supabase.auth.signOut();
-    window.location.href = '/auth';
+    try {
+      await supabase.auth.signOut();
+      // Clear any cached data
+      setUser(null);
+      setSession(null);
+      setProfile(null);
+      
+      // Show success message and redirect
+      setTimeout(() => {
+        window.location.href = '/auth?logout=success';
+      }, 100);
+    } catch (error) {
+      console.error('Error during logout:', error);
+      // Still redirect even if there's an error
+      window.location.href = '/auth';
+    }
   };
 
   return (
