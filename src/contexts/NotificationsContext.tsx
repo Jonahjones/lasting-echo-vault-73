@@ -30,7 +30,8 @@ interface NotificationsContextType {
   markAllAsRead: () => Promise<void>;
   deleteNotification: (notificationId: string) => Promise<void>;
   refreshNotifications: () => Promise<void>;
-  createDailyPromptNotification: () => Promise<void>;
+  createSkippedFirstVideoNotification: () => Promise<void>;
+  createSecondVideoNotification: () => Promise<void>;
 }
 
 const NotificationsContext = createContext<NotificationsContextType | undefined>(undefined);
@@ -144,29 +145,50 @@ export function NotificationsProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  const createDailyPromptNotification = async () => {
+  const createSkippedFirstVideoNotification = async () => {
     if (!user) return;
 
     try {
-      // Get today's prompt
-      const { data: promptData, error: promptError } = await supabase
-        .from('daily_prompts')
-        .select('*')
-        .eq('date', new Date().toISOString().split('T')[0])
-        .single();
-
-      if (promptError || !promptData) return;
-
-      // Check if user already has a notification for today's prompt
+      // Check if user already has this type of notification
       const { data: existingNotification } = await supabase
         .from('notifications')
         .select('id')
         .eq('user_id', user.id)
-        .eq('type', 'daily_prompt')
-        .gte('created_at', new Date().toISOString().split('T')[0])
-        .single();
+        .eq('type', 'draft_reminder')
+        .maybeSingle();
 
-      if (existingNotification) return; // Already has today's prompt notification
+      if (existingNotification) return; // Already has this notification
+
+      // Create the notification
+      const { error } = await supabase
+        .from('notifications')
+        .insert({
+          user_id: user.id,
+          type: 'draft_reminder',
+          title: 'Your First Memory Awaits',
+          message: 'Take a moment to capture something meaningful. Your story matters.',
+          data: { action: 'first_video_reminder' }
+        });
+
+      if (error) throw error;
+      await fetchNotifications();
+    } catch (error) {
+      console.error('Error creating skipped first video notification:', error);
+    }
+  };
+
+  const createSecondVideoNotification = async () => {
+    if (!user) return;
+
+    try {
+      // Get a random daily prompt for the second video
+      const { data: promptData, error: promptError } = await supabase
+        .from('daily_prompts')
+        .select('*')
+        .eq('date', new Date().toISOString().split('T')[0])
+        .maybeSingle();
+
+      const promptText = promptData?.prompt_text || "What's one thing you're grateful for today?";
 
       // Create the notification
       const { error } = await supabase
@@ -174,17 +196,15 @@ export function NotificationsProvider({ children }: { children: ReactNode }) {
         .insert({
           user_id: user.id,
           type: 'daily_prompt',
-          title: 'Daily Recording Prompt',
-          message: `Ready for today's prompt? Tap to start recording: "${promptData.prompt_text}"`,
-          data: { prompt_id: promptData.id, prompt_text: promptData.prompt_text }
+          title: 'Ready for Another Recording?',
+          message: `Tap to start your next memory: "${promptText}"`,
+          data: { prompt_text: promptText, action: 'second_video' }
         });
 
       if (error) throw error;
-
-      // Refresh notifications to show the new one
       await fetchNotifications();
     } catch (error) {
-      console.error('Error creating daily prompt notification:', error);
+      console.error('Error creating second video notification:', error);
     }
   };
 
@@ -195,7 +215,6 @@ export function NotificationsProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (user) {
       fetchNotifications();
-      createDailyPromptNotification();
     }
   }, [user]);
 
@@ -234,7 +253,8 @@ export function NotificationsProvider({ children }: { children: ReactNode }) {
         markAllAsRead,
         deleteNotification,
         refreshNotifications,
-        createDailyPromptNotification,
+        createSkippedFirstVideoNotification,
+        createSecondVideoNotification,
       }}
     >
       {children}

@@ -7,6 +7,9 @@ import { VideoRecorder } from "@/components/VideoRecorder";
 import { SaveMessageModal } from "@/components/SaveMessageModal";
 import { useToast } from "@/hooks/use-toast";
 import { useVideoLibrary } from "@/contexts/VideoLibraryContext";
+import { useNotifications } from "@/contexts/NotificationsContext";
+import { useAuth } from "@/contexts/AuthContext";
+import { supabase } from "@/integrations/supabase/client";
 
 const recordingPrompts = [
   {
@@ -48,6 +51,8 @@ export default function Record() {
   const [dailyPrompt, setDailyPrompt] = useState<string | null>(null);
   const { toast } = useToast();
   const { saveVideo } = useVideoLibrary();
+  const { createSecondVideoNotification } = useNotifications();
+  const { user } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -84,9 +89,17 @@ export default function Record() {
     setRecordingPrompt(undefined);
   };
 
-  const handleSaveMessage = (data: any) => {
+  const handleSaveMessage = async (data: any) => {
     if (videoBlob) {
       const videoDuration = "0:30"; // Default duration, you might want to calculate this
+      
+      // Check if this is user's first video by counting existing videos
+      const { data: existingVideos, error: countError } = await supabase
+        .from('videos')
+        .select('id', { count: 'exact' })
+        .eq('user_id', user?.id);
+
+      const isFirstVideo = !countError && (existingVideos?.length === 0);
       
       saveVideo({
         title: data.title,
@@ -97,6 +110,15 @@ export default function Record() {
         isPublic: data.isPublic || false,
         category: data.category || "wisdom"
       });
+
+      // If this is their first video, create notification for second video
+      if (isFirstVideo) {
+        try {
+          await createSecondVideoNotification();
+        } catch (error) {
+          console.error('Error creating second video notification:', error);
+        }
+      }
 
       toast({
         title: "Message Saved!",

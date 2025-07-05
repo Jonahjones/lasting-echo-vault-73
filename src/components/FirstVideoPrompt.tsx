@@ -3,12 +3,14 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Video, Heart, ArrowRight, Sparkles, Clock, Users, Loader2 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
+import { useNotifications } from "@/contexts/NotificationsContext";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 
 export function FirstVideoPrompt() {
   const { user } = useAuth();
+  const { createSkippedFirstVideoNotification } = useNotifications();
   const navigate = useNavigate();
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
@@ -79,6 +81,9 @@ export function FirstVideoPrompt() {
         .from('profiles')
         .update({ first_video_recorded: true })
         .eq('user_id', user.id);
+
+      // Create a notification to encourage recording later
+      await createSkippedFirstVideoNotification();
 
       navigate('/');
     } catch (error) {
