@@ -50,7 +50,7 @@ export default function Index() {
         // Load inspiring public videos (prioritize recent and most-liked)
         const { data: publicVids } = await supabase
           .from('videos')
-          .select('id, title, description, created_at, likes_count, user_id')
+          .select('id, title, description, created_at, likes_count, user_id, file_path')
           .eq('is_public', true)
           .order('likes_count', { ascending: false })
           .order('created_at', { ascending: false })

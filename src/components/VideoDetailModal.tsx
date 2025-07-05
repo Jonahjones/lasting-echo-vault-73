@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Heart, Play, User, Calendar } from "lucide-react";
+import { Heart, Play, User, Calendar, AlertCircle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
@@ -15,6 +15,7 @@ interface VideoDetailModalProps {
     created_at: string;
     likes_count: number;
     user_id: string;
+    file_path?: string;
   } | null;
   isOpen: boolean;
   onClose: () => void;
@@ -27,6 +28,9 @@ export function VideoDetailModal({ video, isOpen, onClose }: VideoDetailModalPro
   const [likesCount, setLikesCount] = useState(0);
   const [creatorProfile, setCreatorProfile] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [videoUrl, setVideoUrl] = useState<string | null>(null);
+  const [videoLoading, setVideoLoading] = useState(true);
+  const [videoError, setVideoError] = useState(false);
 
   useEffect(() => {
     if (video && user) {
@@ -35,8 +39,37 @@ export function VideoDetailModal({ video, isOpen, onClose }: VideoDetailModalPro
     }
     if (video) {
       setLikesCount(video.likes_count);
+      loadVideoUrl();
     }
   }, [video, user]);
+
+  const loadVideoUrl = async () => {
+    if (!video?.file_path) {
+      setVideoLoading(false);
+      setVideoError(true);
+      return;
+    }
+
+    setVideoLoading(true);
+    setVideoError(false);
+
+    try {
+      const { data } = supabase.storage
+        .from('videos')
+        .getPublicUrl(video.file_path);
+
+      if (data?.publicUrl) {
+        setVideoUrl(data.publicUrl);
+      } else {
+        setVideoError(true);
+      }
+    } catch (error) {
+      console.error('Error loading video:', error);
+      setVideoError(true);
+    } finally {
+      setVideoLoading(false);
+    }
+  };
 
   const checkIfLiked = async () => {
     if (!video || !user) return;
@@ -125,14 +158,53 @@ export function VideoDetailModal({ video, isOpen, onClose }: VideoDetailModalPro
         </DialogHeader>
 
         <div className="space-y-6">
-          {/* Video Player Placeholder */}
-          <div className="aspect-video bg-muted rounded-xl flex items-center justify-center">
-            <div className="text-center space-y-4">
-              <div className="w-16 h-16 bg-primary/20 rounded-full flex items-center justify-center mx-auto">
-                <Play className="w-8 h-8 text-primary" />
+          {/* Video Player */}
+          <div className="aspect-video bg-muted rounded-xl overflow-hidden">
+            {videoLoading ? (
+              /* Loading State */
+              <div className="w-full h-full flex items-center justify-center">
+                <div className="text-center space-y-4">
+                  <div className="w-16 h-16 bg-primary/20 rounded-full flex items-center justify-center mx-auto animate-pulse">
+                    <Play className="w-8 h-8 text-primary" />
+                  </div>
+                  <p className="text-muted-foreground">Loading video...</p>
+                </div>
               </div>
-              <p className="text-muted-foreground">Video playback coming soon</p>
-            </div>
+            ) : videoError || !videoUrl ? (
+              /* Error State */
+              <div className="w-full h-full flex items-center justify-center">
+                <div className="text-center space-y-4">
+                  <div className="w-16 h-16 bg-destructive/20 rounded-full flex items-center justify-center mx-auto">
+                    <AlertCircle className="w-8 h-8 text-destructive" />
+                  </div>
+                  <div>
+                    <p className="text-muted-foreground mb-2">Unable to load video</p>
+                    <Button 
+                      onClick={loadVideoUrl}
+                      variant="outline" 
+                      size="sm"
+                    >
+                      Try Again
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              /* Video Player */
+              <video
+                src={videoUrl}
+                controls
+                className="w-full h-full object-cover"
+                onLoadStart={() => setVideoLoading(false)}
+                onError={() => {
+                  setVideoError(true);
+                  setVideoLoading(false);
+                }}
+                poster={undefined}
+              >
+                Your browser does not support the video tag.
+              </video>
+            )}
           </div>
 
           {/* Video Info */}
