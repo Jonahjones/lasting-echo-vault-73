@@ -66,17 +66,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   useEffect(() => {
+    let isMounted = true;
+    
     // Set up auth state listener FIRST
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
+        if (!isMounted) return;
+        
         setSession(session);
         setUser(session?.user ?? null);
         
         if (session?.user) {
-          // Fetch profile data when user is authenticated
-          setTimeout(() => {
+          // Fetch profile data when user is authenticated - only if we don't have it yet
+          if (!profile || profile.user_id !== session.user.id) {
             fetchProfile(session.user.id);
-          }, 0);
+          }
 
           // Create welcome notification for new signups - but only once
           if (event === 'SIGNED_IN' && !hasTriggeredWelcome) {
@@ -89,10 +93,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
               .ilike('title', '%Welcome%')
               .maybeSingle();
 
-            if (!existingWelcome) {
+            if (!existingWelcome && isMounted) {
               setHasTriggeredWelcome(true);
               // Delay slightly to ensure NotificationsContext is ready
               setTimeout(async () => {
+                if (!isMounted) return;
                 try {
                   const welcomePrompts = [
                     "Welcome! Let's start with something simple - tell us about your favorite childhood memory.",
@@ -144,6 +149,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     // THEN check for existing session
     supabase.auth.getSession().then(({ data: { session } }) => {
+      if (!isMounted) return;
+      
       setSession(session);
       setUser(session?.user ?? null);
       
@@ -154,7 +161,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setIsLoading(false);
     });
 
-    return () => subscription.unsubscribe();
+    return () => {
+      isMounted = false;
+      subscription.unsubscribe();
+    };
   }, []);
 
   const login = async (email: string, password: string): Promise<boolean> => {
