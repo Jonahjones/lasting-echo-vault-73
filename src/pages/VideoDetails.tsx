@@ -13,6 +13,7 @@ import { VideoSharingOptions } from "@/components/video-sharing/VideoSharingOpti
 import { ContactSelector } from "@/components/video-sharing/ContactSelector";
 import { DeliveryScheduler, DeliveryOption } from "@/components/video-sharing/DeliveryScheduler";
 import { VideoConfirmationModal } from "@/components/video-sharing/VideoConfirmationModal";
+import { StorageLimitBanner } from "@/components/StorageLimitBanner";
 
 interface VideoDetailsState {
   videoBlob: Blob;
@@ -23,7 +24,7 @@ export default function VideoDetails() {
   const navigate = useNavigate();
   const location = useLocation();
   const { toast } = useToast();
-  const { saveVideo } = useVideoLibrary();
+  const { saveVideo, videoCount, storageLimit, isAtStorageLimit } = useVideoLibrary();
   const { user } = useAuth();
   
   const state = location.state as VideoDetailsState;
@@ -35,6 +36,7 @@ export default function VideoDetails() {
   // New state for enhanced workflow
   const [isPublic, setIsPublic] = useState(false);
   const [selectedContacts, setSelectedContacts] = useState<string[]>([]);
+  const [selectedContactsData, setSelectedContactsData] = useState<Array<{id: string, full_name: string, email: string}>>([]);
   const [deliveryOption, setDeliveryOption] = useState<DeliveryOption>('save-only');
   const [scheduledDate, setScheduledDate] = useState<Date>();
   const [showConfirmation, setShowConfirmation] = useState(false);
@@ -96,6 +98,15 @@ export default function VideoDetails() {
       return;
     }
 
+    if (isAtStorageLimit) {
+      toast({
+        title: "Storage Limit Reached",
+        description: "You've reached your storage limit. Please upgrade to save more videos.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setIsLoading(true);
 
     try {
@@ -126,7 +137,7 @@ export default function VideoDetails() {
       console.error('Error saving video:', error);
       toast({
         title: "Error",
-        description: "Failed to save video. Please try again.",
+        description: error instanceof Error ? error.message : "Failed to save video. Please try again.",
         variant: "destructive",
       });
     } finally {
@@ -165,6 +176,13 @@ export default function VideoDetails() {
         </div>
 
         <div className="px-4 py-6 space-y-6 max-w-sm mx-auto">
+          {/* Storage Limit Banner */}
+          <StorageLimitBanner 
+            videoCount={videoCount}
+            storageLimit={storageLimit}
+            isAtLimit={isAtStorageLimit}
+          />
+
           {/* Video Preview */}
           <Card className="shadow-card">
             <CardHeader>
@@ -227,6 +245,7 @@ export default function VideoDetails() {
           <ContactSelector
             selectedContacts={selectedContacts}
             onSelectionChange={setSelectedContacts}
+            onContactsDataChange={setSelectedContactsData}
             isPublic={isPublic}
           />
 
@@ -246,10 +265,10 @@ export default function VideoDetails() {
               size="lg"
               variant="legacy"
               onClick={() => setShowConfirmation(true)}
-              disabled={isLoading || !title.trim()}
+              disabled={isLoading || !title.trim() || isAtStorageLimit}
               className="w-full h-12"
             >
-              Review & Save Message
+              {isAtStorageLimit ? "Storage Limit Reached" : "Review & Save Message"}
             </Button>
           </div>
         </div>
@@ -265,7 +284,7 @@ export default function VideoDetails() {
         title={title}
         description={description}
         isPublic={isPublic}
-        selectedContacts={[]} // Will be populated by ContactSelector
+        selectedContacts={selectedContactsData}
         deliveryOption={deliveryOption}
         scheduledDate={scheduledDate}
       />

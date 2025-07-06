@@ -9,6 +9,7 @@ import { Separator } from "@/components/ui/separator";
 import { Shield, Eye, EyeOff, Video, User, Calendar, Search, LogOut, Lock } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { VideoPreview } from "@/components/admin/VideoPreview";
 
 interface AdminVideo {
   id: string;
@@ -372,18 +373,26 @@ export default function Admin() {
 
                     <Separator orientation="vertical" className="hidden lg:block h-16" />
 
-                    {/* Controls */}
-                    <div className="flex flex-col sm:flex-row lg:flex-col items-start sm:items-center lg:items-end gap-3 lg:min-w-[200px]">
-                      <div className="flex items-center space-x-3">
-                        <Label htmlFor={`featured-${video.id}`} className="text-sm font-medium">
-                          {video.is_featured ? "Remove from Feed" : "Add to Feed"}
-                        </Label>
-                        <Switch
-                          id={`featured-${video.id}`}
-                          checked={video.is_featured}
-                          onCheckedChange={() => toggleFeatured(video.id, video.is_featured)}
-                        />
-                      </div>
+                     {/* Controls */}
+                     <div className="flex flex-col sm:flex-row lg:flex-col items-start sm:items-center lg:items-end gap-3 lg:min-w-[200px]">
+                       {/* Video Preview */}
+                       <VideoPreview
+                         videoId={video.id}
+                         title={video.title}
+                         filePath={video.file_path}
+                         className="w-full sm:w-auto"
+                       />
+                       
+                       <div className="flex items-center space-x-3">
+                         <Label htmlFor={`featured-${video.id}`} className="text-sm font-medium">
+                           {video.is_featured ? "Remove from Feed" : "Add to Feed"}
+                         </Label>
+                         <Switch
+                           id={`featured-${video.id}`}
+                           checked={video.is_featured}
+                           onCheckedChange={() => toggleFeatured(video.id, video.is_featured)}
+                         />
+                       </div>
                       
                       <div className="flex items-center space-x-2 text-xs text-muted-foreground">
                         {video.is_featured ? (

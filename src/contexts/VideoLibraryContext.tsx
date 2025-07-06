@@ -19,6 +19,9 @@ export interface SavedVideo {
 
 interface VideoLibraryContextType {
   videos: SavedVideo[];
+  videoCount: number;
+  storageLimit: number;
+  isAtStorageLimit: boolean;
   saveVideo: (videoData: {
     title: string;
     description: string;
@@ -41,6 +44,11 @@ export function VideoLibraryProvider({ children }: { children: React.ReactNode }
   const [videos, setVideos] = useState<SavedVideo[]>([]);
   const [loading, setLoading] = useState(true);
   const { user } = useAuth();
+
+  // Storage limits - can be moved to a config later
+  const storageLimit = 3; // Free tier limit
+  const videoCount = videos.length;
+  const isAtStorageLimit = videoCount >= storageLimit;
 
   // Load videos from database
   const loadVideos = async () => {
@@ -111,6 +119,11 @@ export function VideoLibraryProvider({ children }: { children: React.ReactNode }
   }) => {
     if (!user) throw new Error('User not authenticated');
 
+    // Check storage limit before saving
+    if (isAtStorageLimit) {
+      throw new Error('Storage limit reached. Please upgrade to save more videos.');
+    }
+
     try {
       console.log('Saving video to Supabase...');
       
@@ -155,12 +168,15 @@ export function VideoLibraryProvider({ children }: { children: React.ReactNode }
 
       if (dbError) {
         console.error('Database error:', dbError);
+        
+        // If database save fails, clean up the uploaded file
+        await supabase.storage.from('videos').remove([filePath]);
         throw dbError;
       }
 
       console.log('Video metadata saved to database:', data);
 
-      // Reload videos to update the list
+      // Reload videos to update the list and count
       await loadVideos();
     } catch (error) {
       console.error('Error saving video:', error);
@@ -240,6 +256,9 @@ export function VideoLibraryProvider({ children }: { children: React.ReactNode }
   return (
     <VideoLibraryContext.Provider value={{
       videos,
+      videoCount,
+      storageLimit,
+      isAtStorageLimit,
       saveVideo,
       updateVideo,
       deleteVideo,

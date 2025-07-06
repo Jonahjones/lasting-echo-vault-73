@@ -21,10 +21,11 @@ interface Contact {
 interface ContactSelectorProps {
   selectedContacts: string[];
   onSelectionChange: (contactIds: string[]) => void;
+  onContactsDataChange?: (contacts: Array<{id: string, full_name: string, email: string}>) => void;
   isPublic: boolean;
 }
 
-export function ContactSelector({ selectedContacts, onSelectionChange, isPublic }: ContactSelectorProps) {
+export function ContactSelector({ selectedContacts, onSelectionChange, onContactsDataChange, isPublic }: ContactSelectorProps) {
   const [contacts, setContacts] = useState<Contact[]>([]);
   const [newContactEmail, setNewContactEmail] = useState("");
   const [isLoading, setIsLoading] = useState(true);
@@ -76,6 +77,18 @@ export function ContactSelector({ selectedContacts, onSelectionChange, isPublic 
       : [...selectedContacts, contactId];
     
     onSelectionChange(newSelection);
+    
+    // Pass back the full contact data for selected contacts
+    if (onContactsDataChange) {
+      const selectedContactsData = contacts
+        .filter(contact => newSelection.includes(contact.id))
+        .map(contact => ({
+          id: contact.id,
+          full_name: contact.full_name,
+          email: contact.email
+        }));
+      onContactsDataChange(selectedContactsData);
+    }
   };
 
   const validateEmail = (email: string) => {
