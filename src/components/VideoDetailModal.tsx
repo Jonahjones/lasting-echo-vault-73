@@ -168,7 +168,7 @@ export function VideoDetailModal({ video, isOpen, onClose }: VideoDetailModalPro
 
               <VideoLikeButton 
                 videoId={video.id} 
-                variant="button" 
+                variant="default" 
                 size="md" 
               />
             </div>
