@@ -84,6 +84,7 @@ export default function Auth() {
           });
           return;
         }
+        // Navigation handled by Index.tsx based on profile completion status
       } else {
         success = await signup(email, password);
         if (!success) {
@@ -98,10 +99,7 @@ export default function Auth() {
           title: "Account Created!",
           description: "Welcome to One Final Moment. Please check your email to verify your account.",
         });
-      }
-
-      if (success) {
-        navigate("/");
+        // Navigation handled by Index.tsx - will show profile setup for new users
       }
     } catch (error) {
       toast({
