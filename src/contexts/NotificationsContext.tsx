@@ -33,6 +33,7 @@ interface NotificationsContextType {
   createSkippedFirstVideoNotification: () => Promise<void>;
   createSecondVideoNotification: () => Promise<void>;
   createDailyPromptNotification: () => Promise<void>;
+  createWelcomeNotification: () => Promise<void>;
   getTodaysPrompt: () => Promise<DailyPrompt | null>;
 }
 
@@ -276,6 +277,54 @@ export function NotificationsProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  const createWelcomeNotification = async () => {
+    if (!user) return;
+
+    try {
+      // Welcome prompts to get new users started
+      const welcomePrompts = [
+        "Welcome! Let's start with something simple - tell us about your favorite childhood memory.",
+        "Share a piece of advice you'd give to someone just starting their career.",
+        "What's a family tradition that means a lot to you?",
+        "Tell us about a moment that made you laugh recently.",
+        "Share your favorite recipe and the story behind it.",
+        "What's the best gift you've ever received, and why was it special?",
+        "Describe a place that feels like home to you.",
+        "What's something you learned from your parents or grandparents?",
+        "Share a memory from your first day at a new job or school.",
+        "Tell us about a friend who has made a big impact on your life.",
+        "What's a hobby or activity that brings you joy?",
+        "Share a moment when you felt proud of yourself.",
+        "What's your favorite season and what makes it special?",
+        "Tell us about a book, movie, or song that changed how you see the world.",
+        "What's a simple pleasure that always makes you smile?"
+      ];
+
+      // Select a random welcome prompt
+      const randomPrompt = welcomePrompts[Math.floor(Math.random() * welcomePrompts.length)];
+
+      // Create the welcome notification
+      const { error } = await supabase
+        .from('notifications')
+        .insert({
+          user_id: user.id,
+          type: 'daily_prompt',
+          title: 'Welcome to One Final Moment!',
+          message: `Ready to create your first memory? ${randomPrompt}`,
+          data: { 
+            prompt_text: randomPrompt, 
+            action: 'welcome_video',
+            is_welcome: true 
+          }
+        });
+
+      if (error) throw error;
+      await fetchNotifications();
+    } catch (error) {
+      console.error('Error creating welcome notification:', error);
+    }
+  };
+
   const createDailyPromptNotification = async () => {
     if (!user) return;
 
@@ -371,6 +420,7 @@ export function NotificationsProvider({ children }: { children: ReactNode }) {
         createSkippedFirstVideoNotification,
         createSecondVideoNotification,
         createDailyPromptNotification,
+        createWelcomeNotification,
         getTodaysPrompt,
       }}
     >
