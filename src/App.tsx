@@ -71,8 +71,17 @@ function AppRoutes() {
     );
   }
 
+  // If we have a user but no profile after loading is complete, force profile setup
+  if (!profile) {
+    return (
+      <Routes>
+        <Route path="*" element={<ProfileSetup onComplete={() => window.location.reload()} />} />
+      </Routes>
+    );
+  }
+
   // If user is authenticated but hasn't completed onboarding
-  if (profile && !profile.onboarding_completed) {
+  if (!profile.onboarding_completed) {
     return (
       <Routes>
         <Route path="*" element={<ProfileSetup onComplete={() => window.location.reload()} />} />
@@ -81,7 +90,7 @@ function AppRoutes() {
   }
 
   // If user completed onboarding but hasn't recorded first video
-  if (profile && profile.onboarding_completed && !profile.first_video_recorded) {
+  if (profile.onboarding_completed && !profile.first_video_recorded) {
     return (
       <Routes>
         <Route path="*" element={<FirstVideoPrompt />} />

@@ -40,161 +40,187 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [error, setError] = useState<string | null>(null);
   const [retryCount, setRetryCount] = useState(0);
 
-  const fetchProfile = async (userId: string, timeout = 10000) => {
-    try {
-      console.log('Fetching profile for user:', userId);
-      setError(null);
-      
-      // Create a timeout promise
-      const timeoutPromise = new Promise((_, reject) => {
-        setTimeout(() => reject(new Error('Profile fetch timeout')), timeout);
-      });
+  const fetchProfile = async (userId: string, maxRetries = 2): Promise<{ success: boolean; profile: Profile | null }> => {
+    let retryCount = 0;
+    
+    while (retryCount <= maxRetries) {
+      try {
+        console.log(`Fetching profile for user: ${userId} (attempt ${retryCount + 1})`);
+        setError(null);
+        
+        const { data, error } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('user_id', userId)
+          .maybeSingle();
 
-      // Race between the actual request and timeout
-      const profilePromise = supabase
-        .from('profiles')
-        .select('*')
-        .eq('user_id', userId)
-        .single();
+        console.log('Profile fetch result:', { data, error });
 
-      const { data, error } = await Promise.race([profilePromise, timeoutPromise]) as any;
+        if (error) {
+          console.error('Error fetching profile:', error);
+          throw new Error(`Database error: ${error.message}`);
+        }
 
-      console.log('Profile fetch result:', { data, error });
+        // If no profile found, create one
+        if (!data) {
+          console.log('No profile found, creating default profile');
+          const { data: newProfile, error: createError } = await supabase
+            .from('profiles')
+            .insert({
+              user_id: userId,
+              first_name: null,
+              last_name: null,
+              display_name: null,
+              onboarding_completed: false,
+              first_video_recorded: false
+            })
+            .select()
+            .single();
 
-      if (error && error.code !== 'PGRST116') {
-        console.error('Error fetching profile:', error);
-        setError('Failed to load profile data');
-        return false;
+          if (createError) {
+            console.error('Error creating profile:', createError);
+            throw new Error(`Failed to create profile: ${createError.message}`);
+          }
+
+          return { success: true, profile: newProfile };
+        }
+
+        return { success: true, profile: data };
+      } catch (error) {
+        console.error(`Profile fetch attempt ${retryCount + 1} failed:`, error);
+        retryCount++;
+        
+        if (retryCount > maxRetries) {
+          const errorMessage = error instanceof Error ? error.message : 'Failed to load profile';
+          setError(errorMessage);
+          return { success: false, profile: null };
+        }
+        
+        // Wait before retrying
+        await new Promise(resolve => setTimeout(resolve, 1000 * retryCount));
       }
-
-      setProfile(data || null);
-      return true;
-    } catch (error) {
-      console.error('Error fetching profile:', error);
-      setError(error instanceof Error ? error.message : 'Failed to load profile');
-      return false;
     }
+    
+    return { success: false, profile: null };
   };
 
   const refreshProfile = async () => {
     if (user) {
-      await fetchProfile(user.id);
+      const result = await fetchProfile(user.id);
+      if (result.success) {
+        setProfile(result.profile);
+      }
     }
   };
 
   const retry = async () => {
-    if (user) {
-      setIsLoading(true);
-      setRetryCount(prev => prev + 1);
-      const success = await fetchProfile(user.id);
-      if (success) {
-        setError(null);
-      }
-      setIsLoading(false);
-    } else {
-      // If no user, try to get session again
-      setIsLoading(true);
-      try {
+    setIsLoading(true);
+    setRetryCount(prev => prev + 1);
+    
+    try {
+      if (user) {
+        const result = await fetchProfile(user.id);
+        if (result.success) {
+          setProfile(result.profile);
+          setError(null);
+        }
+      } else {
+        // If no user, try to get session again
         const { data: { session } } = await supabase.auth.getSession();
         if (session?.user) {
           setSession(session);
           setUser(session.user);
-          const success = await fetchProfile(session.user.id);
-          if (success) {
+          const result = await fetchProfile(session.user.id);
+          if (result.success) {
+            setProfile(result.profile);
             setError(null);
           }
         } else {
           setError('No user session found. Please log in again.');
         }
-      } catch (error) {
-        setError('Failed to restore session');
       }
+    } catch (error) {
+      console.error('Retry failed:', error);
+      setError('Failed to restore session. Please try logging in again.');
+    } finally {
       setIsLoading(false);
     }
   };
 
   useEffect(() => {
     let isMounted = true;
-    let profileFetched = false;
+    let currentUserId: string | null = null;
     
     // Set up auth state listener FIRST
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
         if (!isMounted) return;
         
+        console.log('Auth state changed:', event, !!session?.user);
         setSession(session);
         setUser(session?.user ?? null);
         
         if (session?.user) {
-          // Only fetch profile if we haven't already fetched it for this user
-          if (!profileFetched) {
-            profileFetched = true;
-            const success = await fetchProfile(session.user.id);
-            if (!success) {
-              profileFetched = false; // Allow retry on failure
-            }
-          }
+          // Only fetch profile if user changed or we don't have a profile
+          if (currentUserId !== session.user.id || !profile) {
+            currentUserId = session.user.id;
+            
+            const result = await fetchProfile(session.user.id);
+            if (result.success && isMounted) {
+              setProfile(result.profile);
+              
+              // Create welcome notification for new signups - but only once
+              if (event === 'SIGNED_IN' && !hasTriggeredWelcome && result.profile && !result.profile.onboarding_completed) {
+                // Check if user already has a welcome notification to prevent duplicates
+                const { data: existingWelcome } = await supabase
+                  .from('notifications')
+                  .select('id')
+                  .eq('user_id', session.user.id)
+                  .eq('type', 'daily_prompt')
+                  .ilike('title', '%Welcome%')
+                  .maybeSingle();
 
-          // Create welcome notification for new signups - but only once
-          if (event === 'SIGNED_IN' && !hasTriggeredWelcome) {
-            // Check if user already has a welcome notification to prevent duplicates
-            const { data: existingWelcome } = await supabase
-              .from('notifications')
-              .select('id')
-              .eq('user_id', session.user.id)
-              .eq('type', 'daily_prompt')
-              .ilike('title', '%Welcome%')
-              .maybeSingle();
+                if (!existingWelcome && isMounted) {
+                  setHasTriggeredWelcome(true);
+                  // Delay slightly to ensure NotificationsContext is ready
+                  setTimeout(async () => {
+                    if (!isMounted) return;
+                    try {
+                      const welcomePrompts = [
+                        "Welcome! Let's start with something simple - tell us about your favorite childhood memory.",
+                        "Share a piece of advice you'd give to someone just starting their career.",
+                        "What's a family tradition that means a lot to you?",
+                        "Tell us about a moment that made you laugh recently.",
+                        "Share your favorite recipe and the story behind it."
+                      ];
 
-            if (!existingWelcome && isMounted) {
-              setHasTriggeredWelcome(true);
-              // Delay slightly to ensure NotificationsContext is ready
-              setTimeout(async () => {
-                if (!isMounted) return;
-                try {
-                  const welcomePrompts = [
-                    "Welcome! Let's start with something simple - tell us about your favorite childhood memory.",
-                    "Share a piece of advice you'd give to someone just starting their career.",
-                    "What's a family tradition that means a lot to you?",
-                    "Tell us about a moment that made you laugh recently.",
-                    "Share your favorite recipe and the story behind it.",
-                    "What's the best gift you've ever received, and why was it special?",
-                    "Describe a place that feels like home to you.",
-                    "What's something you learned from your parents or grandparents?",
-                    "Share a memory from your first day at a new job or school.",
-                    "Tell us about a friend who has made a big impact on your life.",
-                    "What's a hobby or activity that brings you joy?",
-                    "Share a moment when you felt proud of yourself.",
-                    "What's your favorite season and what makes it special?",
-                    "Tell us about a book, movie, or song that changed how you see the world.",
-                    "What's a simple pleasure that always makes you smile?"
-                  ];
+                      const randomPrompt = welcomePrompts[Math.floor(Math.random() * welcomePrompts.length)];
 
-                  const randomPrompt = welcomePrompts[Math.floor(Math.random() * welcomePrompts.length)];
-
-                  await supabase
-                    .from('notifications')
-                    .insert({
-                      user_id: session.user.id,
-                      type: 'daily_prompt',
-                      title: 'Welcome to One Final Moment!',
-                      message: `Ready to create your first memory? ${randomPrompt}`,
-                      data: { 
-                        prompt_text: randomPrompt, 
-                        action: 'welcome_video',
-                        is_welcome: true 
-                      }
-                    });
-                } catch (error) {
-                  console.error('Error creating welcome notification:', error);
+                      await supabase
+                        .from('notifications')
+                        .insert({
+                          user_id: session.user.id,
+                          type: 'daily_prompt',
+                          title: 'Welcome to One Final Moment!',
+                          message: `Ready to create your first memory? ${randomPrompt}`,
+                          data: { 
+                            prompt_text: randomPrompt, 
+                            action: 'welcome_video',
+                            is_welcome: true 
+                          }
+                        });
+                    } catch (error) {
+                      console.error('Error creating welcome notification:', error);
+                    }
+                  }, 1000);
                 }
-              }, 1000);
+              }
             }
           }
         } else {
           setProfile(null);
           setHasTriggeredWelcome(false);
-          profileFetched = false;
+          currentUserId = null;
         }
         
         setIsLoading(false);
@@ -202,28 +228,33 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     );
 
     // THEN check for existing session
-    supabase.auth.getSession().then(async ({ data: { session } }) => {
-      if (!isMounted) return;
-      
-      setSession(session);
-      setUser(session?.user ?? null);
-      
-      if (session?.user) {
-        profileFetched = true;
-        const success = await fetchProfile(session.user.id);
-        if (!success) {
-          profileFetched = false; // Allow retry on failure
+    const initializeSession = async () => {
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!isMounted) return;
+        
+        setSession(session);
+        setUser(session?.user ?? null);
+        
+        if (session?.user) {
+          currentUserId = session.user.id;
+          const result = await fetchProfile(session.user.id);
+          if (result.success && isMounted) {
+            setProfile(result.profile);
+          }
+        }
+        
+        setIsLoading(false);
+      } catch (error) {
+        if (isMounted) {
+          console.error('Error getting session:', error);
+          setError('Failed to restore session. Please refresh the page.');
+          setIsLoading(false);
         }
       }
-      
-      setIsLoading(false);
-    }).catch((error) => {
-      if (isMounted) {
-        console.error('Error getting session:', error);
-        setError('Failed to restore session');
-        setIsLoading(false);
-      }
-    });
+    };
+    
+    initializeSession();
 
     return () => {
       isMounted = false;

@@ -15,7 +15,7 @@ interface ProfileSetupProps {
 }
 
 export function ProfileSetup({ onComplete }: ProfileSetupProps) {
-  const { user, profile } = useAuth();
+  const { user, profile, refreshProfile } = useAuth();
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
   const [step, setStep] = useState(1);
@@ -23,31 +23,47 @@ export function ProfileSetup({ onComplete }: ProfileSetupProps) {
   // Check if user came from SSO by looking at their provider
   const isFromSSO = user?.app_metadata?.provider !== 'email';
   
-  // Profile data - only pre-fill from SSO sources
+  // Profile data - intelligently pre-fill from SSO or profile, but never for manual signup
   const [firstName, setFirstName] = useState(() => {
+    // If profile already has data, use that (user is editing)
     if (profile?.first_name) return profile.first_name;
+    
+    // Only pre-fill for SSO users
     if (isFromSSO) {
+      // Try different SSO metadata sources
       return user?.user_metadata?.first_name || 
-             user?.user_metadata?.name?.split(' ')[0] || 
-             "";
+             user?.user_metadata?.given_name ||
+             (user?.user_metadata?.name ? user.user_metadata.name.split(' ')[0] : '') || 
+             '';
     }
-    return "";
+    
+    // Manual signup - never pre-fill
+    return '';
   });
   
   const [lastName, setLastName] = useState(() => {
+    // If profile already has data, use that (user is editing)
     if (profile?.last_name) return profile.last_name;
+    
+    // Only pre-fill for SSO users
     if (isFromSSO) {
+      // Try different SSO metadata sources
+      const fullName = user?.user_metadata?.name;
       return user?.user_metadata?.last_name || 
-             (user?.user_metadata?.name?.split(' ').slice(1).join(' ')) || 
-             "";
+             user?.user_metadata?.family_name ||
+             (fullName && fullName.includes(' ') ? fullName.split(' ').slice(1).join(' ') : '') || 
+             '';
     }
-    return "";
+    
+    // Manual signup - never pre-fill
+    return '';
   });
-  const [tagline, setTagline] = useState("");
+  
+  const [tagline, setTagline] = useState(profile?.tagline || '');
   
   // Image handling
   const [selectedImage, setSelectedImage] = useState<File | null>(null);
-  const [imagePreview, setImagePreview] = useState<string>("");
+  const [imagePreview, setImagePreview] = useState<string>(profile?.avatar_url || '');
   const [crop, setCrop] = useState<Crop>({
     unit: '%',
     width: 90,
@@ -58,6 +74,8 @@ export function ProfileSetup({ onComplete }: ProfileSetupProps) {
   const [completedCrop, setCompletedCrop] = useState<PixelCrop>();
   const imgRef = useRef<HTMLImageElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [uploadError, setUploadError] = useState<string>('');
+  const [saveError, setSaveError] = useState<string>('');
 
   const handleImageSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -106,15 +124,23 @@ export function ProfileSetup({ onComplete }: ProfileSetupProps) {
     if (!selectedImage || !completedCrop || !imgRef.current || !user) return null;
 
     try {
+      setUploadError('');
       const croppedImageBlob = await getCroppedImg(imgRef.current, completedCrop);
       const fileName = `avatars/${user.id}/avatar-${Date.now()}.jpg`;
       
-      const { data, error } = await supabase.storage
+      // Upload with timeout
+      const uploadPromise = supabase.storage
         .from('videos')
         .upload(fileName, croppedImageBlob, {
           cacheControl: '3600',
           upsert: true
         });
+      
+      const timeoutPromise = new Promise((_, reject) => 
+        setTimeout(() => reject(new Error('Upload timeout')), 30000)
+      );
+      
+      const { data, error } = await Promise.race([uploadPromise, timeoutPromise]) as any;
 
       if (error) throw error;
 
@@ -125,6 +151,13 @@ export function ProfileSetup({ onComplete }: ProfileSetupProps) {
       return publicUrl;
     } catch (error) {
       console.error('Error uploading avatar:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Failed to upload image';
+      setUploadError(errorMessage);
+      toast({
+        title: "Upload Failed",
+        description: errorMessage + ". Please try again.",
+        variant: "destructive"
+      });
       return null;
     }
   };
@@ -133,44 +166,44 @@ export function ProfileSetup({ onComplete }: ProfileSetupProps) {
     if (!user) return;
 
     setIsLoading(true);
+    setSaveError('');
+    
     try {
-      let avatarUrl = null;
+      let avatarUrl = profile?.avatar_url || null;
+      
+      // Upload new avatar if selected
       if (selectedImage && completedCrop) {
         avatarUrl = await uploadAvatar();
+        if (uploadError) {
+          // Upload failed, but allow user to continue without avatar
+          console.log('Avatar upload failed, continuing without new avatar');
+        }
       }
-
-      // Check if profile exists, if not create it
-      const { data: existingProfile } = await supabase
-        .from('profiles')
-        .select('id')
-        .eq('user_id', user.id)
-        .single();
 
       const profileData = {
         first_name: firstName.trim(),
         last_name: lastName.trim(),
         display_name: `${firstName.trim()} ${lastName.trim()}`.trim(),
         tagline: tagline?.trim() || null,
-        avatar_url: avatarUrl || profile?.avatar_url,
+        avatar_url: avatarUrl,
         onboarding_completed: true
       };
 
-      let error;
-      if (existingProfile) {
-        // Update existing profile
-        ({ error } = await supabase
-          .from('profiles')
-          .update(profileData)
-          .eq('user_id', user.id));
-      } else {
-        // Create new profile
-        ({ error } = await supabase
-          .from('profiles')
-          .insert({
-            user_id: user.id,
-            ...profileData
-          }));
-      }
+      // Use timeout for profile save
+      const savePromise = supabase
+        .from('profiles')
+        .upsert({
+          user_id: user.id,
+          ...profileData
+        }, {
+          onConflict: 'user_id'
+        });
+
+      const timeoutPromise = new Promise((_, reject) => 
+        setTimeout(() => reject(new Error('Save timeout')), 15000)
+      );
+
+      const { error } = await Promise.race([savePromise, timeoutPromise]) as any;
 
       if (error) throw error;
 
@@ -179,12 +212,16 @@ export function ProfileSetup({ onComplete }: ProfileSetupProps) {
         description: "Welcome to One Final Moment. Let's capture your first meaningful moment.",
       });
 
+      // Refresh the profile context and complete onboarding
+      await refreshProfile();
       onComplete();
     } catch (error) {
       console.error('Error saving profile:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Failed to save profile';
+      setSaveError(errorMessage);
       toast({
         title: "Error",
-        description: "Failed to save profile. Please try again.",
+        description: errorMessage + ". Please try again.",
         variant: "destructive"
       });
     } finally {
@@ -412,11 +449,25 @@ export function ProfileSetup({ onComplete }: ProfileSetupProps) {
                     </p>
                   </div>
                   
+                  {/* Error Display */}
+                  {(uploadError || saveError) && (
+                    <div className="p-4 bg-destructive/10 border border-destructive/20 rounded-lg">
+                      <p className="text-sm text-destructive font-medium">
+                        {uploadError && "Image upload failed: " + uploadError}
+                        {saveError && "Save failed: " + saveError}
+                      </p>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        You can try again or continue without the photo.
+                      </p>
+                    </div>
+                  )}
+                  
                   <div className="flex space-x-3">
                     <Button 
                       variant="outline" 
                       onClick={handleBack}
                       className="flex-1 h-12"
+                      disabled={isLoading}
                     >
                       Back
                     </Button>
