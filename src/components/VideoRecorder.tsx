@@ -82,7 +82,10 @@ export function VideoRecorder({ onSave, onDiscard, selectedPrompt }: VideoRecord
       // Check if it's a permission error
       if (error instanceof DOMException && 
           (error.name === 'NotAllowedError' || error.name === 'PermissionDeniedError')) {
+        console.log('Setting permission denied to true');
         setPermissionDenied(true);
+        setIsInitializing(false); // Stop the initializing state
+        return; // Don't continue with mock mode
       } else {
         // Other errors (no camera, etc.) - use mock mode
         setIsMockMode(true);
