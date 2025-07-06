@@ -153,7 +153,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     
     // Set up auth state listener FIRST
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
+      (event, session) => {
         if (!isMounted) return;
         
         console.log('Auth state changed:', event, !!session?.user);
@@ -161,50 +161,58 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setUser(session?.user ?? null);
         
         if (session?.user) {
-          // Only fetch profile if user changed or we don't have a profile
-          if (currentUserId !== session.user.id || !profile) {
+          // Only fetch profile if user changed
+          if (currentUserId !== session.user.id) {
             currentUserId = session.user.id;
             
-            const result = await fetchProfile(session.user.id);
-            if (result.success && isMounted) {
-              setProfile(result.profile);
+            // Defer profile fetching to avoid deadlock
+            setTimeout(async () => {
+              if (!isMounted) return;
               
-              // Create welcome notification for new signups - but only once
-              if (event === 'SIGNED_IN' && !hasTriggeredWelcome && result.profile && !result.profile.onboarding_completed) {
-                // Check if user already has a welcome notification to prevent duplicates
-                const { data: existingWelcome } = await supabase
-                  .from('notifications')
-                  .select('id')
-                  .eq('user_id', session.user.id)
-                  .eq('type', 'daily_prompt')
-                  .ilike('title', '%Welcome%')
-                  .maybeSingle();
+              const result = await fetchProfile(session.user.id);
+              if (result.success && isMounted) {
+                setProfile(result.profile);
+                
+                // Create welcome notification for new signups - but only once
+                if (event === 'SIGNED_IN' && !hasTriggeredWelcome && result.profile && !result.profile.onboarding_completed) {
+                  setTimeout(async () => {
+                    if (!isMounted) return;
+                    
+                    try {
+                      // Check if user already has a welcome notification to prevent duplicates
+                      const { data: existingWelcome } = await supabase
+                        .from('notifications')
+                        .select('id')
+                        .eq('user_id', session.user.id)
+                        .eq('type', 'daily_prompt')
+                        .ilike('title', '%Welcome%')
+                        .maybeSingle();
 
-                if (!existingWelcome && isMounted) {
-                  setHasTriggeredWelcome(true);
-                  // Create single welcome notification without delay
-                  try {
-                    const welcomePrompt = "Welcome! Start by recording your first memory.";
+                      if (!existingWelcome && isMounted) {
+                        setHasTriggeredWelcome(true);
+                        const welcomePrompt = "Welcome! Start by recording your first memory.";
 
-                    await supabase
-                      .from('notifications')
-                      .insert({
-                        user_id: session.user.id,
-                        type: 'daily_prompt',
-                        title: 'Welcome to One Final Moment!',
-                        message: `${welcomePrompt} Share a favorite childhood memory, a lesson you've learned, or something that makes you smile.`,
-                        data: { 
-                          prompt_text: welcomePrompt, 
-                          action: 'welcome_video',
-                          is_welcome: true 
-                        }
-                      });
-                  } catch (error) {
-                    console.error('Error creating welcome notification:', error);
-                  }
+                        await supabase
+                          .from('notifications')
+                          .insert({
+                            user_id: session.user.id,
+                            type: 'daily_prompt',
+                            title: 'Welcome to One Final Moment!',
+                            message: `${welcomePrompt} Share a favorite childhood memory, a lesson you've learned, or something that makes you smile.`,
+                            data: { 
+                              prompt_text: welcomePrompt, 
+                              action: 'welcome_video',
+                              is_welcome: true 
+                            }
+                          });
+                      }
+                    } catch (error) {
+                      console.error('Error creating welcome notification:', error);
+                    }
+                  }, 0);
                 }
               }
-            }
+            }, 0);
           }
         } else {
           setProfile(null);
