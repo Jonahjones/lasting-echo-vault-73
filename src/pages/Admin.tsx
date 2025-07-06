@@ -194,6 +194,7 @@ export default function Admin() {
   const toggleFeatured = async (videoId: string, currentlyFeatured: boolean) => {
     const newFeaturedState = !currentlyFeatured;
     console.log(`Admin action: ${newFeaturedState ? 'Featuring' : 'Unfeaturing'} video ${videoId}`);
+    console.log('Current video state:', { videoId, currentlyFeatured });
     
     try {
       // When featuring a video, it must also be public to appear in the feed
@@ -202,43 +203,63 @@ export default function Admin() {
         is_public: newFeaturedState // Featured videos are automatically public
       };
       
-      console.log('Updating video with:', updateData);
+      console.log('About to update video with data:', updateData);
       
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from('videos')
         .update(updateData)
-        .eq('id', videoId);
+        .eq('id', videoId)
+        .select('id, title, is_featured, is_public');
 
       if (error) {
-        console.error('Database update error:', error);
+        console.error('❌ Database update error:', error);
         throw error;
       }
 
-      console.log(`Successfully ${newFeaturedState ? 'featured' : 'unfeatured'} video in database`);
-      console.log(`Video is now: featured=${newFeaturedState}, public=${newFeaturedState}`);
+      console.log('✅ Database update successful:', data);
+      
+      if (!data || data.length === 0) {
+        console.error('❌ No data returned from update - video may not exist or update failed');
+        throw new Error('Video update returned no data');
+      }
+
+      const updatedVideo = data[0];
+      console.log('Updated video confirmation:', updatedVideo);
 
       // Update local state
       setVideos(prev => prev.map(video => 
         video.id === videoId 
-          ? { ...video, is_featured: newFeaturedState, is_public: newFeaturedState }
+          ? { ...video, is_featured: updatedVideo.is_featured, is_public: updatedVideo.is_public }
           : video
       ));
 
       // Log the action
       logAdminAction(
         newFeaturedState ? "FEATURE_VIDEO" : "UNFEATURE_VIDEO", 
-        { videoId, title: videos.find(v => v.id === videoId)?.title, newState: newFeaturedState, isPublic: newFeaturedState }
+        { 
+          videoId, 
+          title: videos.find(v => v.id === videoId)?.title, 
+          newFeaturedState: updatedVideo.is_featured, 
+          newPublicState: updatedVideo.is_public 
+        }
       );
 
       toast({
-        title: "Video Updated",
-        description: `Video ${newFeaturedState ? 'featured and will appear in public feed' : 'removed from public feed'} successfully`,
+        title: "Video Updated Successfully",
+        description: `"${videos.find(v => v.id === videoId)?.title}" ${newFeaturedState ? 'is now featured and will appear in public feed' : 'removed from public feed'}`,
       });
+      
+      // Reload videos to ensure sync
+      setTimeout(() => {
+        console.log('Reloading admin videos to confirm changes...');
+        loadVideos();
+      }, 1000);
+      
     } catch (error) {
-      console.error('Error updating video:', error);
+      console.error('❌ Error updating video:', error);
       toast({
-        title: "Error",
-        description: "Failed to update video status",
+        title: "Update Failed",
+        description: error instanceof Error ? error.message : "Failed to update video status",
         variant: "destructive"
       });
     }
