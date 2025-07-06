@@ -14,6 +14,8 @@ import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 import { useVideoLibrary } from "@/contexts/VideoLibraryContext";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
 
 interface VideoDetailsState {
   videoBlob: Blob;
@@ -25,6 +27,7 @@ export default function VideoDetails() {
   const location = useLocation();
   const { toast } = useToast();
   const { saveVideo } = useVideoLibrary();
+  const { user } = useAuth();
   
   const state = location.state as VideoDetailsState;
   const [title, setTitle] = useState("");
@@ -38,12 +41,8 @@ export default function VideoDetails() {
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
-  // Mock contacts data - in real app this would come from a contacts API
-  const [contacts] = useState([
-    { id: "1", name: "Sarah Johnson", email: "sarah@example.com", avatar: null },
-    { id: "2", name: "Michael Chen", email: "michael@example.com", avatar: null },
-    { id: "3", name: "Emma Davis", email: "emma@example.com", avatar: null },
-  ]);
+  const [contacts, setContacts] = useState<Array<{id: string, name: string, email: string, avatar: null}>>([]);
+  const [contactsLoading, setContactsLoading] = useState(true);
 
   useEffect(() => {
     if (!state?.videoBlob) {
@@ -62,6 +61,46 @@ export default function VideoDetails() {
       URL.revokeObjectURL(videoUrl);
     };
   }, [state, navigate]);
+
+  // Fetch user's contacts
+  useEffect(() => {
+    const fetchContacts = async () => {
+      if (!user) return;
+      
+      try {
+        setContactsLoading(true);
+        const { data, error } = await supabase
+          .from('contacts')
+          .select('id, full_name, email')
+          .eq('user_id', user.id)
+          .order('full_name');
+
+        if (error) {
+          console.error('Error fetching contacts:', error);
+          toast({
+            title: "Error",
+            description: "Failed to load contacts.",
+            variant: "destructive",
+          });
+        } else {
+          // Transform data to match expected format
+          const transformedContacts = data.map(contact => ({
+            id: contact.id,
+            name: contact.full_name,
+            email: contact.email || '',
+            avatar: null
+          }));
+          setContacts(transformedContacts);
+        }
+      } catch (error) {
+        console.error('Error fetching contacts:', error);
+      } finally {
+        setContactsLoading(false);
+      }
+    };
+
+    fetchContacts();
+  }, [user, toast]);
 
   const captureThumbnail = () => {
     if (videoRef.current && canvasRef.current) {
@@ -313,7 +352,16 @@ export default function VideoDetails() {
             {/* Existing Contacts */}
             <div className="space-y-3">
               <Label>Your Contacts</Label>
-              {contacts.map((contact) => (
+              {contactsLoading ? (
+                <div className="text-center py-8">
+                  <div className="text-sm text-muted-foreground">Loading contacts...</div>
+                </div>
+              ) : contacts.length === 0 ? (
+                <div className="text-center py-8">
+                  <div className="text-sm text-muted-foreground">No contacts yet. Add a contact to share your message.</div>
+                </div>
+              ) : (
+                contacts.map((contact) => (
                 <div
                   key={contact.id}
                   className={cn(
@@ -337,7 +385,8 @@ export default function VideoDetails() {
                     <Check className="w-5 h-5 text-primary" />
                   )}
                 </div>
-              ))}
+                ))
+              )}
             </div>
 
             <Separator />

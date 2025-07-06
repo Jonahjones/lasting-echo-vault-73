@@ -73,6 +73,7 @@ export function VideoRecorder({ onSave, onDiscard, selectedPrompt }: VideoRecord
       
       if (videoRef.current) {
         videoRef.current.srcObject = mediaStream;
+        videoRef.current.play().catch(console.error);
       }
       console.log('Camera initialized successfully');
     } catch (error) {
