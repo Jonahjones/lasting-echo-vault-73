@@ -22,11 +22,26 @@ import Admin from "./pages/Admin";
 import Notifications from "./pages/Notifications";
 import NotFound from "./pages/NotFound";
 import { useAuth } from "@/contexts/AuthContext";
+import { useState, useEffect } from "react";
 
 function AppRoutes() {
   const { user, profile, isLoading, error, retry } = useAuth();
+  const [loadingTimeout, setLoadingTimeout] = useState(false);
 
-  if (isLoading) {
+  // Set a maximum loading timeout to prevent infinite loading
+  useEffect(() => {
+    if (isLoading) {
+      const timeout = setTimeout(() => {
+        setLoadingTimeout(true);
+      }, 15000); // 15 second timeout
+
+      return () => clearTimeout(timeout);
+    } else {
+      setLoadingTimeout(false);
+    }
+  }, [isLoading]);
+
+  if (isLoading && !loadingTimeout) {
     return (
       <div className="min-h-screen bg-gradient-comfort flex items-center justify-center">
         <div className="text-center space-y-4 max-w-sm mx-auto px-6">
@@ -34,28 +49,45 @@ function AppRoutes() {
             <div className="w-6 h-6 rounded-full bg-primary-foreground/50" />
           </div>
           <p className="text-muted-foreground">Loading your experience...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Show error state if loading timed out or there's an error
+  if (loadingTimeout || error) {
+    return (
+      <div className="min-h-screen bg-gradient-comfort flex items-center justify-center">
+        <div className="text-center space-y-4 max-w-sm mx-auto px-6">
+          <div className="w-12 h-12 bg-destructive/20 rounded-2xl flex items-center justify-center mx-auto">
+            <div className="w-6 h-6 rounded-full bg-destructive" />
+          </div>
+          <div className="space-y-3">
+            <h3 className="text-lg font-semibold text-foreground">
+              {loadingTimeout ? "Loading timeout" : "Connection error"}
+            </h3>
+            <p className="text-sm text-muted-foreground">
+              {error || "Couldn't load your experience. Please check your connection or try again."}
+            </p>
+          </div>
           
-          {error && (
-            <div className="mt-6 p-4 bg-destructive/10 border border-destructive/20 rounded-lg">
-              <p className="text-sm text-destructive font-medium mb-3">
-                {error}
-              </p>
-              <div className="flex flex-col gap-2">
-                <button
-                  onClick={retry}
-                  className="px-4 py-2 bg-primary text-primary-foreground rounded-md text-sm font-medium hover:bg-primary/90 transition-colors"
-                >
-                  Try Again
-                </button>
-                <button
-                  onClick={() => window.location.href = '/auth'}
-                  className="px-4 py-2 bg-muted text-muted-foreground rounded-md text-sm font-medium hover:bg-muted/80 transition-colors"
-                >
-                  Back to Login
-                </button>
-              </div>
-            </div>
-          )}
+          <div className="flex flex-col gap-2 mt-6">
+            <button
+              onClick={() => {
+                setLoadingTimeout(false);
+                retry();
+              }}
+              className="px-4 py-2 bg-primary text-primary-foreground rounded-md text-sm font-medium hover:bg-primary/90 transition-colors"
+            >
+              Try Again
+            </button>
+            <button
+              onClick={() => window.location.href = '/auth'}
+              className="px-4 py-2 bg-muted text-muted-foreground rounded-md text-sm font-medium hover:bg-muted/80 transition-colors"
+            >
+              Back to Login
+            </button>
+          </div>
         </div>
       </div>
     );

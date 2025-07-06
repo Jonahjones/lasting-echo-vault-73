@@ -48,11 +48,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         console.log(`Fetching profile for user: ${userId} (attempt ${retryCount + 1})`);
         setError(null);
         
-        const { data, error } = await supabase
+        // Add timeout to prevent hanging
+        const profilePromise = supabase
           .from('profiles')
           .select('*')
           .eq('user_id', userId)
           .maybeSingle();
+
+        const timeoutPromise = new Promise((_, reject) => 
+          setTimeout(() => reject(new Error('Profile fetch timeout')), 10000)
+        );
+
+        const { data, error } = await Promise.race([profilePromise, timeoutPromise]) as any;
 
         console.log('Profile fetch result:', { data, error });
 
@@ -64,7 +71,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         // If no profile found, create one
         if (!data) {
           console.log('No profile found, creating default profile');
-          const { data: newProfile, error: createError } = await supabase
+          
+          const createPromise = supabase
             .from('profiles')
             .insert({
               user_id: userId,
@@ -76,6 +84,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             })
             .select()
             .single();
+
+          const createTimeoutPromise = new Promise((_, reject) => 
+            setTimeout(() => reject(new Error('Profile creation timeout')), 10000)
+          );
+
+          const { data: newProfile, error: createError } = await Promise.race([createPromise, createTimeoutPromise]) as any;
 
           if (createError) {
             console.error('Error creating profile:', createError);
