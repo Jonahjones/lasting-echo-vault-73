@@ -159,7 +159,7 @@ export default function Record() {
         </div>
       </div>
 
-      <div className="px-4 py-6 space-y-6 max-w-sm mx-auto">
+      <div className="px-4 py-4 space-y-4 max-w-sm mx-auto">
         {/* Video Recorder */}
         <Card className="shadow-card">
           <CardContent className="p-4">
@@ -171,121 +171,75 @@ export default function Record() {
           </CardContent>
         </Card>
 
-        {/* Random Prompt Button */}
-        <div className="flex justify-center">
-          <Button 
-            variant="warm" 
-            size="lg" 
-            onClick={getRandomPrompt}
-            className="h-12 px-6 w-[90%]"
-          >
-            <Shuffle className="w-5 h-5 mr-2" />
-            Random Prompt
-          </Button>
-        </div>
-
-        {/* Daily Prompt Display (from notification) */}
-        {dailyPrompt && (
-          <Card className="bg-yellow-500/5 border-yellow-500/20 shadow-card">
-            <CardContent className="p-4">
-              <div className="flex items-start space-x-3">
-                <div className="w-10 h-10 bg-yellow-500/10 rounded-lg flex items-center justify-center mt-1">
-                  <Lightbulb className="w-5 h-5 text-yellow-600" />
-                </div>
-                <div className="flex-1">
-                  <h4 className="font-medium text-foreground mb-2">Daily Prompt</h4>
-                  <p className="text-sm text-muted-foreground leading-relaxed">
-                    {dailyPrompt}
-                  </p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        )}
-
-        {/* Random Prompt Display */}
-        {randomPrompt && !dailyPrompt && (
-          <Card className="bg-accent/5 border-accent/20 shadow-card">
-            <CardContent className="p-4">
-              <div className="flex items-start space-x-3">
-                <div className="w-10 h-10 bg-accent/10 rounded-lg flex items-center justify-center mt-1">
-                  <Shuffle className="w-5 h-5 text-accent-foreground" />
-                </div>
-                <div className="flex-1">
-                  <h4 className="font-medium text-foreground mb-2">Random Prompt</h4>
-                  <p className="text-sm text-muted-foreground leading-relaxed">
-                    {randomPrompt}
-                  </p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        )}
-
-        {/* Selected Prompt Display */}
-        {selectedPrompt !== null && !randomPrompt && !dailyPrompt && (
-          <Card className="bg-primary/5 border-primary/20 shadow-card">
-            <CardContent className="p-4">
-              <div className="flex items-start space-x-3">
-                <div className="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center mt-1">
-                  {(() => {
+        {/* Compact Prompt Display */}
+        {(dailyPrompt || randomPrompt || selectedPrompt !== null) && (
+          <div className="bg-gradient-to-r from-primary/10 to-accent/10 rounded-lg p-3 border border-primary/20">
+            <div className="flex items-center space-x-2">
+              <div className="w-6 h-6 bg-primary/20 rounded-md flex items-center justify-center">
+                {dailyPrompt && <Lightbulb className="w-3 h-3 text-primary" />}
+                {randomPrompt && !dailyPrompt && <Shuffle className="w-3 h-3 text-primary" />}
+                {selectedPrompt !== null && !randomPrompt && !dailyPrompt && 
+                  (() => {
                     const IconComponent = recordingPrompts[selectedPrompt].icon;
-                    return <IconComponent className="w-5 h-5 text-primary" />;
-                  })()}
-                </div>
-                <div className="flex-1">
-                  <h4 className="font-medium text-foreground mb-2">
-                    {recordingPrompts[selectedPrompt].title}
-                  </h4>
-                  <p className="text-sm text-muted-foreground leading-relaxed">
-                    {recordingPrompts[selectedPrompt].prompt}
-                  </p>
-                </div>
+                    return <IconComponent className="w-3 h-3 text-primary" />;
+                  })()
+                }
               </div>
-            </CardContent>
-          </Card>
+              <p className="text-xs font-medium text-foreground line-clamp-2">
+                {getCurrentPrompt()}
+              </p>
+            </div>
+          </div>
         )}
 
-        {/* Guided Prompts */}
+        {/* Random Prompt Button */}
+        <Button 
+          variant="warm" 
+          size="sm" 
+          onClick={getRandomPrompt}
+          className="w-full h-10"
+        >
+          <Shuffle className="w-4 h-4 mr-2" />
+          Get Random Prompt
+        </Button>
+
+        {/* Compact Guided Prompts */}
         <Card className="shadow-card">
-          <CardHeader>
-            <CardTitle className="text-lg">Choose a Prompt</CardTitle>
-            <CardDescription>
-              Get started with a guided message
-            </CardDescription>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base">Choose a Prompt</CardTitle>
           </CardHeader>
-          <CardContent className="space-y-3">
+          <CardContent className="space-y-2">
             {recordingPrompts.map((prompt, index) => (
               <button
                 key={index}
                 onClick={() => {
                   setSelectedPrompt(index);
-                  setRandomPrompt(null); // Clear random prompt if guided is chosen
-                  setDailyPrompt(null); // Clear daily prompt if guided is chosen
+                  setRandomPrompt(null);
+                  setDailyPrompt(null);
                 }}
-                className={`w-full p-4 rounded-lg border text-left transition-all duration-200 hover:shadow-card ${
+                className={`w-full p-3 rounded-md border text-left transition-all duration-200 hover:shadow-card ${
                   selectedPrompt === index && !randomPrompt && !dailyPrompt
                     ? "bg-primary/5 border-primary/20"
                     : "bg-card border-border hover:bg-muted"
                 }`}
               >
-                <div className="flex items-start space-x-3">
-                  <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${
+                <div className="flex items-center space-x-3">
+                  <div className={`w-8 h-8 rounded-md flex items-center justify-center ${
                     selectedPrompt === index && !randomPrompt && !dailyPrompt
                       ? "bg-primary/10"
                       : "bg-muted"
                   }`}>
-                    <prompt.icon className={`w-5 h-5 ${
+                    <prompt.icon className={`w-4 h-4 ${
                       selectedPrompt === index && !randomPrompt && !dailyPrompt
                         ? "text-primary"
                         : "text-muted-foreground"
                     }`} />
                   </div>
                   <div className="flex-1">
-                    <h4 className="font-medium text-foreground mb-1">
+                    <h4 className="font-medium text-foreground text-sm mb-1">
                       {prompt.title}
                     </h4>
-                    <p className="text-sm text-muted-foreground leading-relaxed">
+                    <p className="text-xs text-muted-foreground line-clamp-1">
                       {prompt.prompt}
                     </p>
                   </div>
@@ -295,27 +249,23 @@ export default function Record() {
           </CardContent>
         </Card>
 
-        {/* Tips Card */}
+        {/* Compact Tips */}
         <Card className="shadow-card">
-          <CardHeader>
-            <CardTitle className="text-lg">Recording Tips</CardTitle>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm">Quick Tips</CardTitle>
           </CardHeader>
-          <CardContent className="space-y-3">
-            <div className="flex items-center space-x-3 text-sm">
-              <div className="w-2 h-2 bg-primary rounded-full"></div>
-              <span className="text-muted-foreground">Find a quiet, well-lit space</span>
+          <CardContent className="space-y-2">
+            <div className="flex items-center space-x-2 text-xs">
+              <div className="w-1.5 h-1.5 bg-primary rounded-full"></div>
+              <span className="text-muted-foreground">Find quiet, well-lit space</span>
             </div>
-            <div className="flex items-center space-x-3 text-sm">
-              <div className="w-2 h-2 bg-primary rounded-full"></div>
-              <span className="text-muted-foreground">Speak clearly and at a comfortable pace</span>
+            <div className="flex items-center space-x-2 text-xs">
+              <div className="w-1.5 h-1.5 bg-primary rounded-full"></div>
+              <span className="text-muted-foreground">Speak clearly, comfortable pace</span>
             </div>
-            <div className="flex items-center space-x-3 text-sm">
-              <div className="w-2 h-2 bg-primary rounded-full"></div>
-              <span className="text-muted-foreground">30-second limit for each recording</span>
-            </div>
-            <div className="flex items-center space-x-3 text-sm">
-              <div className="w-2 h-2 bg-primary rounded-full"></div>
-              <span className="text-muted-foreground">Remember, this is a gift of love</span>
+            <div className="flex items-center space-x-2 text-xs">
+              <div className="w-1.5 h-1.5 bg-primary rounded-full"></div>
+              <span className="text-muted-foreground">30-second limit per recording</span>
             </div>
           </CardContent>
         </Card>

@@ -24,14 +24,19 @@ export default function Notifications() {
   } = useNotifications();
   
   const [filter, setFilter] = useState<'all' | 'unread'>('all');
+  const [isInitialized, setIsInitialized] = useState(false);
 
   useEffect(() => {
     if (!user) {
       navigate('/auth');
       return;
     }
-    refreshNotifications();
-  }, [user, navigate, refreshNotifications]);
+    
+    // Prevent initial flashing by waiting for first load
+    if (!isInitialized) {
+      refreshNotifications().finally(() => setIsInitialized(true));
+    }
+  }, [user, navigate, refreshNotifications, isInitialized]);
 
   const filteredNotifications = notifications.filter(notification => 
     filter === 'all' || !notification.is_read
@@ -109,7 +114,7 @@ export default function Notifications() {
     }
   };
 
-  if (isLoading) {
+  if (isLoading || !isInitialized) {
     return (
       <div className="min-h-screen bg-background pb-20">
         <div className="bg-card border-b border-border sticky top-0 z-40">

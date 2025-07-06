@@ -78,51 +78,60 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             fetchProfile(session.user.id);
           }, 0);
 
-          // Create welcome notification for new signups
+          // Create welcome notification for new signups - but only once
           if (event === 'SIGNED_IN' && !hasTriggeredWelcome) {
-            setHasTriggeredWelcome(true);
-            // Delay slightly to ensure NotificationsContext is ready
-            setTimeout(async () => {
-              try {
-                // We need to call the notification function, but we can't import it here
-                // due to circular dependency. Instead, we'll create the notification directly
-                const welcomePrompts = [
-                  "Welcome! Let's start with something simple - tell us about your favorite childhood memory.",
-                  "Share a piece of advice you'd give to someone just starting their career.",
-                  "What's a family tradition that means a lot to you?",
-                  "Tell us about a moment that made you laugh recently.",
-                  "Share your favorite recipe and the story behind it.",
-                  "What's the best gift you've ever received, and why was it special?",
-                  "Describe a place that feels like home to you.",
-                  "What's something you learned from your parents or grandparents?",
-                  "Share a memory from your first day at a new job or school.",
-                  "Tell us about a friend who has made a big impact on your life.",
-                  "What's a hobby or activity that brings you joy?",
-                  "Share a moment when you felt proud of yourself.",
-                  "What's your favorite season and what makes it special?",
-                  "Tell us about a book, movie, or song that changed how you see the world.",
-                  "What's a simple pleasure that always makes you smile?"
-                ];
+            // Check if user already has a welcome notification to prevent duplicates
+            const { data: existingWelcome } = await supabase
+              .from('notifications')
+              .select('id')
+              .eq('user_id', session.user.id)
+              .eq('type', 'daily_prompt')
+              .ilike('title', '%Welcome%')
+              .maybeSingle();
 
-                const randomPrompt = welcomePrompts[Math.floor(Math.random() * welcomePrompts.length)];
+            if (!existingWelcome) {
+              setHasTriggeredWelcome(true);
+              // Delay slightly to ensure NotificationsContext is ready
+              setTimeout(async () => {
+                try {
+                  const welcomePrompts = [
+                    "Welcome! Let's start with something simple - tell us about your favorite childhood memory.",
+                    "Share a piece of advice you'd give to someone just starting their career.",
+                    "What's a family tradition that means a lot to you?",
+                    "Tell us about a moment that made you laugh recently.",
+                    "Share your favorite recipe and the story behind it.",
+                    "What's the best gift you've ever received, and why was it special?",
+                    "Describe a place that feels like home to you.",
+                    "What's something you learned from your parents or grandparents?",
+                    "Share a memory from your first day at a new job or school.",
+                    "Tell us about a friend who has made a big impact on your life.",
+                    "What's a hobby or activity that brings you joy?",
+                    "Share a moment when you felt proud of yourself.",
+                    "What's your favorite season and what makes it special?",
+                    "Tell us about a book, movie, or song that changed how you see the world.",
+                    "What's a simple pleasure that always makes you smile?"
+                  ];
 
-                await supabase
-                  .from('notifications')
-                  .insert({
-                    user_id: session.user.id,
-                    type: 'daily_prompt',
-                    title: 'Welcome to One Final Moment!',
-                    message: `Ready to create your first memory? ${randomPrompt}`,
-                    data: { 
-                      prompt_text: randomPrompt, 
-                      action: 'welcome_video',
-                      is_welcome: true 
-                    }
-                  });
-              } catch (error) {
-                console.error('Error creating welcome notification:', error);
-              }
-            }, 1000);
+                  const randomPrompt = welcomePrompts[Math.floor(Math.random() * welcomePrompts.length)];
+
+                  await supabase
+                    .from('notifications')
+                    .insert({
+                      user_id: session.user.id,
+                      type: 'daily_prompt',
+                      title: 'Welcome to One Final Moment!',
+                      message: `Ready to create your first memory? ${randomPrompt}`,
+                      data: { 
+                        prompt_text: randomPrompt, 
+                        action: 'welcome_video',
+                        is_welcome: true 
+                      }
+                    });
+                } catch (error) {
+                  console.error('Error creating welcome notification:', error);
+                }
+              }, 1000);
+            }
           }
         } else {
           setProfile(null);

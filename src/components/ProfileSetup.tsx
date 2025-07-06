@@ -20,19 +20,29 @@ export function ProfileSetup({ onComplete }: ProfileSetupProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [step, setStep] = useState(1);
   
-  // Profile data - pre-fill from existing data or user metadata
-  const [firstName, setFirstName] = useState(
-    profile?.first_name || 
-    user?.user_metadata?.first_name || 
-    user?.user_metadata?.name?.split(' ')[0] || 
-    ""
-  );
-  const [lastName, setLastName] = useState(
-    profile?.last_name || 
-    user?.user_metadata?.last_name || 
-    (user?.user_metadata?.name?.split(' ').slice(1).join(' ')) || 
-    ""
-  );
+  // Check if user came from SSO by looking at their provider
+  const isFromSSO = user?.app_metadata?.provider !== 'email';
+  
+  // Profile data - only pre-fill from SSO sources
+  const [firstName, setFirstName] = useState(() => {
+    if (profile?.first_name) return profile.first_name;
+    if (isFromSSO) {
+      return user?.user_metadata?.first_name || 
+             user?.user_metadata?.name?.split(' ')[0] || 
+             "";
+    }
+    return "";
+  });
+  
+  const [lastName, setLastName] = useState(() => {
+    if (profile?.last_name) return profile.last_name;
+    if (isFromSSO) {
+      return user?.user_metadata?.last_name || 
+             (user?.user_metadata?.name?.split(' ').slice(1).join(' ')) || 
+             "";
+    }
+    return "";
+  });
   const [tagline, setTagline] = useState("");
   
   // Image handling
@@ -239,9 +249,9 @@ export function ProfileSetup({ onComplete }: ProfileSetupProps) {
                   </CardTitle>
                   <CardDescription className="text-base text-muted-foreground leading-relaxed">
                     Help us personalize your memory journal experience with your name and details.
-                    {(firstName || lastName) && (
+                    {isFromSSO && (firstName || lastName) && (
                       <span className="block mt-2 text-sm text-primary font-medium">
-                        ✓ We've pre-filled your name - feel free to edit it if needed
+                        ✓ We've pre-filled your name from your account - feel free to edit it if needed
                       </span>
                     )}
                   </CardDescription>
