@@ -52,11 +52,11 @@ export function MobileHeader() {
                 <Avatar className="w-6 h-6">
                   <AvatarImage src={profile?.avatar_url || undefined} />
                   <AvatarFallback className="text-xs bg-primary/10 text-primary">
-                    {user?.user_metadata?.full_name?.[0] || user?.email?.[0] || 'U'}
+                    {profile?.display_name?.[0] || profile?.first_name?.[0] || user?.email?.[0] || 'U'}
                   </AvatarFallback>
                 </Avatar>
                 <span className="text-sm font-medium truncate max-w-20">
-                  {user?.user_metadata?.full_name || user?.email}
+                  {profile?.display_name || (profile?.first_name ? `${profile.first_name} ${profile.last_name || ''}`.trim() : '') || user?.email || 'User'}
                 </span>
               </Button>
             </Link>

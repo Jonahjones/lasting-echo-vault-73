@@ -1,14 +1,14 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
-import { User, Bell, Globe, LogOut, Mail, Smartphone } from "lucide-react";
+import { User, Bell, Globe, LogOut, Mail, Smartphone, Edit } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
-import { AvatarUpload } from "@/components/AvatarUpload";
-import { supabase } from "@/integrations/supabase/client";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { ProfileEditForm } from "@/components/ProfileEditForm";
 
 export default function Profile() {
   const { user, logout, profile } = useAuth();
@@ -18,14 +18,7 @@ export default function Profile() {
   const [emailNotifications, setEmailNotifications] = useState(true);
   const [pushNotifications, setPushNotifications] = useState(false);
   const [recordingReminders, setRecordingReminders] = useState(true);
-  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
-
-  // Load profile data on mount
-  useEffect(() => {
-    if (profile) {
-      setAvatarUrl(profile.avatar_url);
-    }
-  }, [profile]);
+  const [isEditingProfile, setIsEditingProfile] = useState(false);
 
   const handleLogout = () => {
     logout();
@@ -61,6 +54,13 @@ export default function Profile() {
     });
   };
 
+  // Single source of truth: use profile data
+  const displayName = profile?.display_name || 
+    (profile?.first_name ? `${profile.first_name} ${profile.last_name || ''}`.trim() : '') ||
+    user?.email || 'Unknown User';
+  
+  const userInitials = profile?.display_name?.[0] || profile?.first_name?.[0] || user?.email?.[0] || 'U';
+
   return (
     <div className="min-h-screen bg-gradient-subtle pb-20">
       <div className="container mx-auto px-4 py-8 max-w-sm">
@@ -75,41 +75,67 @@ export default function Profile() {
             </p>
           </div>
 
-          {/* User Info & Avatar */}
-          <Card className="shadow-card mb-6">
-            <CardHeader>
-              <CardTitle className="flex items-center space-x-2">
-                <User className="w-5 h-5 text-primary" />
-                <span>Account Information</span>
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-6">
-                {/* Avatar Section */}
-                <div className="flex flex-col items-center">
-                  <AvatarUpload 
-                    currentAvatarUrl={avatarUrl}
-                    onAvatarChange={setAvatarUrl}
-                    size="lg"
-                  />
-                </div>
-                
-                <Separator />
-                
-                {/* User Details */}
-                <div className="space-y-4">
-                  <div>
-                    <Label className="text-sm font-medium text-muted-foreground">Name</Label>
-                    <p className="text-foreground font-medium">{user?.user_metadata?.full_name || user?.email}</p>
+          {/* Profile Edit Form or Profile Display */}
+          {isEditingProfile ? (
+            <div className="mb-6">
+              <ProfileEditForm 
+                onCancel={() => setIsEditingProfile(false)}
+                onSave={() => setIsEditingProfile(false)}
+              />
+            </div>
+          ) : (
+            <Card className="shadow-card mb-6">
+              <CardHeader>
+                <CardTitle className="flex items-center justify-between">
+                  <div className="flex items-center space-x-2">
+                    <User className="w-5 h-5 text-primary" />
+                    <span>Account Information</span>
                   </div>
-                  <div>
-                    <Label className="text-sm font-medium text-muted-foreground">Email</Label>
-                    <p className="text-foreground font-medium">{user?.email}</p>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setIsEditingProfile(true)}
+                  >
+                    <Edit className="w-4 h-4 mr-2" />
+                    Edit
+                  </Button>
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-6">
+                  {/* Avatar Section */}
+                  <div className="flex flex-col items-center">
+                    <Avatar className="w-24 h-24 border-2 border-border">
+                      <AvatarImage src={profile?.avatar_url || undefined} />
+                      <AvatarFallback className="bg-primary/10 text-primary text-2xl">
+                        {userInitials}
+                      </AvatarFallback>
+                    </Avatar>
+                  </div>
+                  
+                  <Separator />
+                  
+                  {/* User Details */}
+                  <div className="space-y-4">
+                    <div>
+                      <Label className="text-sm font-medium text-muted-foreground">Name</Label>
+                      <p className="text-foreground font-medium">{displayName}</p>
+                    </div>
+                    <div>
+                      <Label className="text-sm font-medium text-muted-foreground">Email</Label>
+                      <p className="text-foreground font-medium">{user?.email}</p>
+                    </div>
+                    {profile?.tagline && (
+                      <div>
+                        <Label className="text-sm font-medium text-muted-foreground">Personal Tagline</Label>
+                        <p className="text-foreground font-medium italic">"{profile.tagline}"</p>
+                      </div>
+                    )}
                   </div>
                 </div>
-              </div>
-            </CardContent>
-          </Card>
+              </CardContent>
+            </Card>
+          )}
 
           {/* Profile Visibility */}
           <Card className="shadow-card mb-6">

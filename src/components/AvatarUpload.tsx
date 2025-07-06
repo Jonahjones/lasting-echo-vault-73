@@ -13,7 +13,7 @@ interface AvatarUploadProps {
 }
 
 export function AvatarUpload({ currentAvatarUrl, onAvatarChange, size = "lg" }: AvatarUploadProps) {
-  const { user } = useAuth();
+  const { user, refreshProfile } = useAuth();
   const { toast } = useToast();
   const [isUploading, setIsUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -29,20 +29,21 @@ export function AvatarUpload({ currentAvatarUrl, onAvatarChange, size = "lg" }: 
     if (!file || !user) return;
 
     // Validate file type
-    if (!file.type.startsWith('image/')) {
+    const validImageTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
+    if (!validImageTypes.includes(file.type)) {
       toast({
         title: "Invalid file type",
-        description: "Please select an image file",
+        description: "Please select a JPEG, PNG, or WebP image file",
         variant: "destructive"
       });
       return;
     }
 
-    // Validate file size (max 2MB)
-    if (file.size > 2 * 1024 * 1024) {
+    // Validate file size (max 5MB)
+    if (file.size > 5 * 1024 * 1024) {
       toast({
         title: "File too large",
-        description: "Please select an image smaller than 2MB",
+        description: "Please select an image smaller than 5MB",
         variant: "destructive"
       });
       return;
@@ -55,10 +56,19 @@ export function AvatarUpload({ currentAvatarUrl, onAvatarChange, size = "lg" }: 
       const fileExt = file.name.split('.').pop();
       const fileName = `avatar-${user.id}-${Date.now()}.${fileExt}`;
 
-      // Upload to Supabase storage
-      const { data: uploadData, error: uploadError } = await supabase.storage
-        .from('videos') // Using existing videos bucket for now
-        .upload(`avatars/${fileName}`, file);
+      // Upload to Supabase storage with timeout
+      const uploadPromise = supabase.storage
+        .from('videos')
+        .upload(`avatars/${fileName}`, file, {
+          cacheControl: '3600',
+          upsert: true
+        });
+
+      const timeoutPromise = new Promise((_, reject) => 
+        setTimeout(() => reject(new Error('Upload timeout')), 30000)
+      );
+
+      const { data: uploadData, error: uploadError } = await Promise.race([uploadPromise, timeoutPromise]) as any;
 
       if (uploadError) throw uploadError;
 
@@ -75,6 +85,8 @@ export function AvatarUpload({ currentAvatarUrl, onAvatarChange, size = "lg" }: 
 
       if (profileError) throw profileError;
 
+      // Refresh profile context to update everywhere instantly
+      await refreshProfile();
       onAvatarChange?.(publicUrl);
       
       toast({
@@ -84,9 +96,10 @@ export function AvatarUpload({ currentAvatarUrl, onAvatarChange, size = "lg" }: 
 
     } catch (error) {
       console.error('Error uploading avatar:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
       toast({
         title: "Upload failed",
-        description: "Failed to update your avatar. Please try again.",
+        description: `Failed to update your avatar: ${errorMessage}. Please try again.`,
         variant: "destructive"
       });
     } finally {
@@ -109,6 +122,8 @@ export function AvatarUpload({ currentAvatarUrl, onAvatarChange, size = "lg" }: 
 
       if (error) throw error;
 
+      // Refresh profile context to update everywhere instantly
+      await refreshProfile();
       onAvatarChange?.(null);
       
       toast({
