@@ -182,37 +182,26 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
                 if (!existingWelcome && isMounted) {
                   setHasTriggeredWelcome(true);
-                  // Delay slightly to ensure NotificationsContext is ready
-                  setTimeout(async () => {
-                    if (!isMounted) return;
-                    try {
-                      const welcomePrompts = [
-                        "Welcome! Let's start with something simple - tell us about your favorite childhood memory.",
-                        "Share a piece of advice you'd give to someone just starting their career.",
-                        "What's a family tradition that means a lot to you?",
-                        "Tell us about a moment that made you laugh recently.",
-                        "Share your favorite recipe and the story behind it."
-                      ];
+                  // Create single welcome notification without delay
+                  try {
+                    const welcomePrompt = "Welcome! Start by recording your first memory.";
 
-                      const randomPrompt = welcomePrompts[Math.floor(Math.random() * welcomePrompts.length)];
-
-                      await supabase
-                        .from('notifications')
-                        .insert({
-                          user_id: session.user.id,
-                          type: 'daily_prompt',
-                          title: 'Welcome to One Final Moment!',
-                          message: `Ready to create your first memory? ${randomPrompt}`,
-                          data: { 
-                            prompt_text: randomPrompt, 
-                            action: 'welcome_video',
-                            is_welcome: true 
-                          }
-                        });
-                    } catch (error) {
-                      console.error('Error creating welcome notification:', error);
-                    }
-                  }, 1000);
+                    await supabase
+                      .from('notifications')
+                      .insert({
+                        user_id: session.user.id,
+                        type: 'daily_prompt',
+                        title: 'Welcome to One Final Moment!',
+                        message: `${welcomePrompt} Share a favorite childhood memory, a lesson you've learned, or something that makes you smile.`,
+                        data: { 
+                          prompt_text: welcomePrompt, 
+                          action: 'welcome_video',
+                          is_welcome: true 
+                        }
+                      });
+                  } catch (error) {
+                    console.error('Error creating welcome notification:', error);
+                  }
                 }
               }
             }

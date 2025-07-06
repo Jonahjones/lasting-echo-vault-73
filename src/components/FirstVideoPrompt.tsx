@@ -12,7 +12,7 @@ import { EmptyStateEncouragement } from "@/components/EmptyStateEncouragement";
 
 export function FirstVideoPrompt() {
   const { user, refreshProfile } = useAuth();
-  const { createSkippedFirstVideoNotification } = useNotifications();
+  const { createFirstVideoCompleteNotification } = useNotifications();
   const navigate = useNavigate();
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);

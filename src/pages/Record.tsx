@@ -51,7 +51,7 @@ export default function Record() {
   const [dailyPrompt, setDailyPrompt] = useState<string | null>(null);
   const { toast } = useToast();
   const { saveVideo } = useVideoLibrary();
-  const { createSecondVideoNotification } = useNotifications();
+  const { createFirstVideoCompleteNotification } = useNotifications();
   const { user } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();

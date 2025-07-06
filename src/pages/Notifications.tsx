@@ -25,6 +25,7 @@ export default function Notifications() {
   
   const [filter, setFilter] = useState<'all' | 'unread'>('all');
   const [isInitialized, setIsInitialized] = useState(false);
+  const [initialLoad, setInitialLoad] = useState(true);
 
   useEffect(() => {
     if (!user) {
@@ -33,34 +34,28 @@ export default function Notifications() {
     }
     
     // Prevent initial flashing by waiting for first load
-    if (!isInitialized) {
-      refreshNotifications().finally(() => setIsInitialized(true));
+    if (initialLoad) {
+      refreshNotifications().finally(() => {
+        setIsInitialized(true);
+        setInitialLoad(false);
+      });
     }
-  }, [user, navigate, refreshNotifications, isInitialized]);
+  }, [user, navigate, refreshNotifications, initialLoad]);
 
   const filteredNotifications = notifications.filter(notification => 
     filter === 'all' || !notification.is_read
   );
 
   const handleNotificationClick = async (notification: any) => {
-    // Mark as read if unread
     if (!notification.is_read) {
       await markAsRead(notification.id);
     }
-
-    // Handle different notification types
     switch (notification.type) {
       case 'daily_prompt':
       case 'draft_reminder':
-        // Navigate to record page with pre-filled prompt
-        navigate('/record', { 
-          state: { 
-            prompt: notification.data?.prompt_text || notification.message 
-          }
-        });
+        navigate('/record', { state: { prompt: notification.data?.prompt_text || notification.message }});
         break;
       case 'shared_video':
-        // Navigate to video details or vault
         navigate('/vault');
         break;
       default:
@@ -70,51 +65,37 @@ export default function Notifications() {
 
   const getNotificationIcon = (type: string) => {
     switch (type) {
-      case 'daily_prompt':
-        return <Sparkles className="w-5 h-5 text-accent-foreground" />;
-      case 'shared_video':
-        return <Video className="w-5 h-5 text-primary" />;
-      case 'draft_reminder':
-        return <MessageCircle className="w-5 h-5 text-muted-foreground" />;
-      case 'delivery_confirmation':
-        return <CheckCircle className="w-5 h-5 text-green-600" />;
-      default:
-        return <Bell className="w-5 h-5 text-muted-foreground" />;
+      case 'daily_prompt': return <Sparkles className="w-5 h-5 text-accent-foreground" />;
+      case 'shared_video': return <Video className="w-5 h-5 text-primary" />;
+      case 'draft_reminder': return <MessageCircle className="w-5 h-5 text-muted-foreground" />;
+      case 'delivery_confirmation': return <CheckCircle className="w-5 h-5 text-green-600" />;
+      default: return <Bell className="w-5 h-5 text-muted-foreground" />;
     }
   };
 
   const getNotificationBgColor = (type: string, isRead: boolean) => {
     if (isRead) return 'bg-card';
-    
     switch (type) {
-      case 'daily_prompt':
-        return 'bg-accent/5 border-accent/20';
-      case 'shared_video':
-        return 'bg-primary/5 border-primary/20';
-      case 'draft_reminder':
-        return 'bg-muted/50 border-border';
-      case 'delivery_confirmation':
-        return 'bg-green-50 border-green-200';
-      default:
-        return 'bg-muted/20 border-border';
+      case 'daily_prompt': return 'bg-accent/5 border-accent/20';
+      case 'shared_video': return 'bg-primary/5 border-primary/20';
+      case 'draft_reminder': return 'bg-muted/50 border-border';
+      case 'delivery_confirmation': return 'bg-green-50 border-green-200';
+      default: return 'bg-muted/20 border-border';
     }
   };
 
   const getActionText = (type: string) => {
     switch (type) {
       case 'daily_prompt':
-      case 'draft_reminder':
-        return 'Record Now';
-      case 'shared_video':
-        return 'View Video';
-      case 'delivery_confirmation':
-        return 'View Details';
-      default:
-        return 'View';
+      case 'draft_reminder': return 'Record Now';
+      case 'shared_video': return 'View Video';
+      case 'delivery_confirmation': return 'View Details';
+      default: return 'View';
     }
   };
 
-  if (isLoading || !isInitialized) {
+  // Don't render anything until initialized to prevent flash
+  if (!isInitialized || isLoading) {
     return (
       <div className="min-h-screen bg-background pb-20">
         <div className="bg-card border-b border-border sticky top-0 z-40">
