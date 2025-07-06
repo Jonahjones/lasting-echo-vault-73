@@ -10,6 +10,7 @@ import { Shield, Eye, EyeOff, Video, User, Calendar, Search, LogOut, Lock } from
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { VideoPreview } from "@/components/admin/VideoPreview";
+import { useAuth } from "@/contexts/AuthContext";
 
 interface AdminVideo {
   id: string;
@@ -34,6 +35,7 @@ export default function Admin() {
   const [loading, setLoading] = useState(false);
   const [lastActivity, setLastActivity] = useState(Date.now());
   const { toast } = useToast();
+  const { user } = useAuth();
 
   const ADMIN_PASSWORD = "Admin3272!";
   const SESSION_TIMEOUT = 15 * 60 * 1000; // 15 minutes
@@ -84,11 +86,34 @@ export default function Admin() {
     setFilteredVideos(filtered);
   }, [videos, searchTerm]);
 
-  const handlePasswordSubmit = (e: React.FormEvent) => {
+  const handlePasswordSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (password === ADMIN_PASSWORD) {
       setIsAuthenticated(true);
       setLastActivity(Date.now());
+      
+      // Add current user to admin_users table if not already there
+      if (user) {
+        try {
+          const { error: adminError } = await supabase
+            .from('admin_users')
+            .upsert({ 
+              user_id: user.id, 
+              role: 'moderator' 
+            }, { 
+              onConflict: 'user_id' 
+            });
+          
+          if (adminError) {
+            console.warn('Could not add to admin_users:', adminError);
+          } else {
+            console.log('✅ User added to admin_users table');
+          }
+        } catch (error) {
+          console.warn('Admin table update failed:', error);
+        }
+      }
+      
       loadVideos();
       
       // Log admin access
