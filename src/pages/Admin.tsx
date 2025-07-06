@@ -133,6 +133,8 @@ export default function Admin() {
   const loadVideos = async () => {
     setLoading(true);
     try {
+      console.log('Admin: Loading all public videos for moderation...');
+      
       // Get all public videos with user information
       const { data: videosData, error } = await supabase
         .from('videos')
@@ -151,6 +153,13 @@ export default function Admin() {
         .order('created_at', { ascending: false });
 
       if (error) throw error;
+
+      console.log(`Admin: Found ${videosData?.length || 0} public videos`);
+      console.log('Admin: Featured status breakdown:', {
+        total: videosData?.length || 0,
+        featured: videosData?.filter(v => v.is_featured).length || 0,
+        notFeatured: videosData?.filter(v => !v.is_featured).length || 0
+      });
 
       // Get user profiles for each video
       const userIds = [...new Set(videosData?.map(v => v.user_id) || [])];
@@ -187,9 +196,17 @@ export default function Admin() {
     console.log(`Admin action: ${newFeaturedState ? 'Featuring' : 'Unfeaturing'} video ${videoId}`);
     
     try {
+      // When featuring a video, it must also be public to appear in the feed
+      const updateData = {
+        is_featured: newFeaturedState,
+        is_public: newFeaturedState // Featured videos are automatically public
+      };
+      
+      console.log('Updating video with:', updateData);
+      
       const { error } = await supabase
         .from('videos')
-        .update({ is_featured: newFeaturedState })
+        .update(updateData)
         .eq('id', videoId);
 
       if (error) {
@@ -198,18 +215,19 @@ export default function Admin() {
       }
 
       console.log(`Successfully ${newFeaturedState ? 'featured' : 'unfeatured'} video in database`);
+      console.log(`Video is now: featured=${newFeaturedState}, public=${newFeaturedState}`);
 
       // Update local state
       setVideos(prev => prev.map(video => 
         video.id === videoId 
-          ? { ...video, is_featured: newFeaturedState }
+          ? { ...video, is_featured: newFeaturedState, is_public: newFeaturedState }
           : video
       ));
 
       // Log the action
       logAdminAction(
         newFeaturedState ? "FEATURE_VIDEO" : "UNFEATURE_VIDEO", 
-        { videoId, title: videos.find(v => v.id === videoId)?.title, newState: newFeaturedState }
+        { videoId, title: videos.find(v => v.id === videoId)?.title, newState: newFeaturedState, isPublic: newFeaturedState }
       );
 
       toast({

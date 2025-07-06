@@ -50,10 +50,12 @@ export default function Index() {
         };
         setUserStats(stats);
 
-        // Load inspiring public videos (prioritize recent and most-liked, but only featured ones)
+        // Load inspiring public videos (featured videos that are public)
+        console.log('Loading featured public videos for "Moments That Inspire" feed...');
+        
         const { data: publicVids, error: videosError } = await supabase
           .from('videos')
-          .select('id, title, description, created_at, likes_count, user_id, file_path')
+          .select('id, title, description, created_at, likes_count, user_id, file_path, is_featured, is_public')
           .eq('is_public', true)
           .eq('is_featured', true)
           .order('likes_count', { ascending: false })
@@ -64,9 +66,25 @@ export default function Index() {
           console.error('Error loading public videos:', videosError);
         } else {
           console.log('Loaded public videos:', publicVids?.length || 0, 'featured videos');
+          console.log('Featured videos data:', publicVids);
+          
+          // Debug: Also check if there are ANY featured videos (regardless of public status)
+          const { data: allFeatured } = await supabase
+            .from('videos')
+            .select('id, title, is_featured, is_public')
+            .eq('is_featured', true);
+          console.log('All featured videos (debug):', allFeatured);
         }
 
         setPublicVideos(publicVids || []);
+        
+        // Debug logging for troubleshooting
+        if ((publicVids?.length || 0) === 0) {
+          console.warn('🚨 No featured videos found for public feed. This could indicate:');
+          console.warn('1. No videos are marked as both is_public=true AND is_featured=true');
+          console.warn('2. Database query issue');
+          console.warn('3. Admin may have only set is_featured but not is_public');
+        }
       } catch (error) {
         console.error('Error loading dashboard data:', error);
       } finally {
