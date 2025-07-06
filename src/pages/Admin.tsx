@@ -89,30 +89,44 @@ export default function Admin() {
   const handlePasswordSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (password === ADMIN_PASSWORD) {
-      setIsAuthenticated(true);
-      setLastActivity(Date.now());
-      
-      // Add current user to admin_users table if not already there
+      // Add current user to admin_users table BEFORE setting authenticated
       if (user) {
         try {
-          const { error: adminError } = await supabase
+          console.log('🔧 Adding user to admin_users table:', user.id);
+          const { data: adminData, error: adminError } = await supabase
             .from('admin_users')
             .upsert({ 
               user_id: user.id, 
               role: 'moderator' 
             }, { 
               onConflict: 'user_id' 
-            });
+            })
+            .select();
           
           if (adminError) {
-            console.warn('Could not add to admin_users:', adminError);
+            console.error('❌ Failed to add to admin_users:', adminError);
+            toast({
+              title: "Admin Setup Error",
+              description: "Could not register admin permissions. Please try again.",
+              variant: "destructive"
+            });
+            return;
           } else {
-            console.log('✅ User added to admin_users table');
+            console.log('✅ User successfully added to admin_users table:', adminData);
           }
         } catch (error) {
-          console.warn('Admin table update failed:', error);
+          console.error('❌ Admin table update failed:', error);
+          toast({
+            title: "Admin Setup Error", 
+            description: "Database error. Please try again.",
+            variant: "destructive"
+          });
+          return;
         }
       }
+      
+      setIsAuthenticated(true);
+      setLastActivity(Date.now());
       
       loadVideos();
       
@@ -221,6 +235,20 @@ export default function Admin() {
     console.log(`🔄 Admin toggling video ${videoId}: ${currentlyFeatured} → ${newFeaturedState}`);
     
     try {
+      // First, verify the current user is an admin
+      const { data: adminCheck, error: adminError } = await supabase
+        .from('admin_users')
+        .select('user_id, role')
+        .eq('user_id', user?.id)
+        .single();
+      
+      if (adminError || !adminCheck) {
+        console.error('❌ Admin check failed:', adminError);
+        throw new Error('Admin privileges not found. Please re-login.');
+      }
+      
+      console.log('✅ Admin verified:', adminCheck);
+      
       // Force explicit boolean values and test with direct update
       console.log('📤 Sending database update...');
       const { data, error } = await supabase
@@ -238,8 +266,8 @@ export default function Admin() {
       }
 
       if (!data || data.length === 0) {
-        console.error('❌ No rows updated - video not found');
-        throw new Error('Video not found or not updated');
+        console.error('❌ No rows updated - video not found or permission denied');
+        throw new Error('Video not found or insufficient permissions');
       }
 
       console.log('✅ Database updated successfully:', data[0]);
