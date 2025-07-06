@@ -193,73 +193,57 @@ export default function Admin() {
 
   const toggleFeatured = async (videoId: string, currentlyFeatured: boolean) => {
     const newFeaturedState = !currentlyFeatured;
-    console.log(`Admin action: ${newFeaturedState ? 'Featuring' : 'Unfeaturing'} video ${videoId}`);
-    console.log('Current video state:', { videoId, currentlyFeatured });
+    console.log(`🔄 Admin toggling video ${videoId}: ${currentlyFeatured} → ${newFeaturedState}`);
     
     try {
-      // When featuring a video, it must also be public to appear in the feed
-      const updateData = {
-        is_featured: newFeaturedState,
-        is_public: newFeaturedState // Featured videos are automatically public
-      };
-      
-      console.log('About to update video with data:', updateData);
-      
+      // Force explicit boolean values and test with direct update
+      console.log('📤 Sending database update...');
       const { data, error } = await supabase
         .from('videos')
-        .update(updateData)
+        .update({ 
+          is_featured: newFeaturedState,
+          is_public: true  // Ensure public when featuring
+        })
         .eq('id', videoId)
-        .select('id, title, is_featured, is_public');
+        .select();
 
       if (error) {
-        console.error('❌ Database update error:', error);
+        console.error('❌ Database error:', error);
         throw error;
       }
 
-      console.log('✅ Database update successful:', data);
-      
       if (!data || data.length === 0) {
-        console.error('❌ No data returned from update - video may not exist or update failed');
-        throw new Error('Video update returned no data');
+        console.error('❌ No rows updated - video not found');
+        throw new Error('Video not found or not updated');
       }
 
-      const updatedVideo = data[0];
-      console.log('Updated video confirmation:', updatedVideo);
+      console.log('✅ Database updated successfully:', data[0]);
 
-      // Update local state
+      // Update local state immediately
       setVideos(prev => prev.map(video => 
         video.id === videoId 
-          ? { ...video, is_featured: updatedVideo.is_featured, is_public: updatedVideo.is_public }
+          ? { ...video, is_featured: newFeaturedState, is_public: true }
           : video
       ));
 
-      // Log the action
-      logAdminAction(
+      // Log admin action
+      await logAdminAction(
         newFeaturedState ? "FEATURE_VIDEO" : "UNFEATURE_VIDEO", 
-        { 
-          videoId, 
-          title: videos.find(v => v.id === videoId)?.title, 
-          newFeaturedState: updatedVideo.is_featured, 
-          newPublicState: updatedVideo.is_public 
-        }
+        { videoId, title: videos.find(v => v.id === videoId)?.title, success: true }
       );
 
       toast({
-        title: "Video Updated Successfully",
-        description: `"${videos.find(v => v.id === videoId)?.title}" ${newFeaturedState ? 'is now featured and will appear in public feed' : 'removed from public feed'}`,
+        title: newFeaturedState ? "Video Featured!" : "Video Unfeatured",
+        description: newFeaturedState ? 
+          "Video will now appear in public feed" : 
+          "Video removed from public feed",
       });
-      
-      // Reload videos to ensure sync
-      setTimeout(() => {
-        console.log('Reloading admin videos to confirm changes...');
-        loadVideos();
-      }, 1000);
-      
+
     } catch (error) {
-      console.error('❌ Error updating video:', error);
+      console.error('❌ Toggle failed:', error);
       toast({
         title: "Update Failed",
-        description: error instanceof Error ? error.message : "Failed to update video status",
+        description: `Failed to ${newFeaturedState ? 'feature' : 'unfeature'} video: ${error instanceof Error ? error.message : 'Unknown error'}`,
         variant: "destructive"
       });
     }
@@ -347,6 +331,21 @@ export default function Admin() {
               <span>•</span>
               <Eye className="w-4 h-4" />
               <span>{videos.filter(v => v.is_featured).length} featured</span>
+              
+              {/* Test Button */}
+              <Button 
+                size="sm" 
+                variant="outline" 
+                onClick={async () => {
+                  if (videos.length > 0) {
+                    console.log('🧪 Testing admin toggle on first video...');
+                    await toggleFeatured(videos[0].id, videos[0].is_featured);
+                  }
+                }}
+                className="ml-4"
+              >
+                🧪 Test Toggle
+              </Button>
             </div>
           </div>
 
