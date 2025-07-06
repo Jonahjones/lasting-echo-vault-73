@@ -1,17 +1,13 @@
-import { Heart, LogOut, Bell } from "lucide-react";
+import { Heart, LogOut, Settings, User, Shield } from "lucide-react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { useAuth } from "@/contexts/AuthContext";
-import { useNotifications } from "@/contexts/NotificationsContext";
-import { NotificationsCenter } from "./NotificationsCenter";
 import { useState } from "react";
 
 export function MobileHeader() {
   const { logout, user, profile } = useAuth();
-  const { unreadCount } = useNotifications();
-  const [showNotifications, setShowNotifications] = useState(false);
 
   const handleLogout = () => {
     logout();
@@ -30,44 +26,43 @@ export function MobileHeader() {
           </Link>
           
           <div className="flex items-center space-x-2">
-            <Button 
-              variant="ghost" 
-              size="sm" 
-              className="relative"
-              onClick={() => setShowNotifications(true)}
-            >
-              <Bell className="w-4 h-4" />
-              {unreadCount > 0 && (
-                <Badge 
-                  variant="destructive" 
-                  className="absolute -top-1 -right-1 w-5 h-5 flex items-center justify-center p-0 text-xs"
-                >
-                  {unreadCount > 99 ? '99+' : unreadCount}
-                </Badge>
-              )}
-            </Button>
-            
-            <Link to="/profile">
-              <Button variant="ghost" size="sm" className="flex items-center space-x-2">
-                <Avatar className="w-6 h-6">
-                  <AvatarImage src={profile?.avatar_url || undefined} />
-                  <AvatarFallback className="text-xs bg-primary/10 text-primary">
-                    {profile?.display_name?.[0] || profile?.first_name?.[0] || user?.email?.[0] || 'U'}
-                  </AvatarFallback>
-                </Avatar>
-                <span className="text-sm font-medium truncate max-w-20">
-                  {profile?.display_name || (profile?.first_name ? `${profile.first_name} ${profile.last_name || ''}`.trim() : '') || user?.email || 'User'}
-                </span>
-              </Button>
-            </Link>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="sm" className="flex items-center space-x-2">
+                  <Avatar className="w-6 h-6">
+                    <AvatarImage src={profile?.avatar_url || undefined} />
+                    <AvatarFallback className="text-xs bg-primary/10 text-primary">
+                      {profile?.display_name?.[0] || profile?.first_name?.[0] || user?.email?.[0] || 'U'}
+                    </AvatarFallback>
+                  </Avatar>
+                  <span className="text-sm font-medium truncate max-w-20">
+                    {profile?.display_name || (profile?.first_name ? `${profile.first_name} ${profile.last_name || ''}`.trim() : '') || user?.email || 'User'}
+                  </span>
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-56">
+                <DropdownMenuItem asChild>
+                  <Link to="/profile" className="flex items-center cursor-pointer">
+                    <User className="w-4 h-4 mr-2" />
+                    Profile Settings
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                  <Link to="/profile" className="flex items-center cursor-pointer">
+                    <Shield className="w-4 h-4 mr-2" />
+                    Privacy & Account
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={handleLogout} className="flex items-center cursor-pointer text-destructive">
+                  <LogOut className="w-4 h-4 mr-2" />
+                  Logout
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
         </div>
       </div>
-      
-      <NotificationsCenter 
-        isOpen={showNotifications}
-        onClose={() => setShowNotifications(false)}
-      />
     </header>
   );
 }

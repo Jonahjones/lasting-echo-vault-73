@@ -20,7 +20,7 @@ export function BottomNavigation() {
     { path: "/record", icon: Video, label: "Record" },
     { path: "/library", icon: Library, label: "Library" },
     { path: "/contacts", icon: Users, label: "Contacts" },
-    { path: "/profile", icon: Settings, label: "Profile" },
+    { path: "/notifications", icon: Bell, label: "Alerts" },
   ];
 
   // Don't show navigation if user is not authenticated
@@ -36,7 +36,7 @@ export function BottomNavigation() {
             <Link
               key={path}
               to={path}
-              className={`flex flex-col items-center justify-center flex-1 py-2 px-1 rounded-lg transition-all duration-300 ${
+              className={`flex flex-col items-center justify-center flex-1 py-2 px-1 rounded-lg relative transition-all duration-300 ${
                 isActive(path)
                   ? "bg-primary/10 text-primary"
                   : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
@@ -46,31 +46,17 @@ export function BottomNavigation() {
               <span className={`text-xs font-medium ${isActive(path) ? "text-primary" : ""}`}>
                 {label}
               </span>
+              {path === "/notifications" && unreadCount > 0 && (
+                <Badge 
+                  variant="destructive" 
+                  className="absolute -top-1 -right-1 w-5 h-5 flex items-center justify-center p-0 text-xs"
+                >
+                  {unreadCount > 99 ? '99+' : unreadCount}
+                </Badge>
+              )}
             </Link>
           ))}
           
-          {/* Notifications Bell */}
-          <Link
-            to="/notifications"
-            className={`flex flex-col items-center justify-center flex-1 py-2 px-1 rounded-lg relative transition-all duration-300 ${
-              isActive("/notifications")
-                ? "bg-primary/10 text-primary"
-                : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
-            }`}
-          >
-            <Bell className={`w-5 h-5 mb-1 ${isActive("/notifications") ? "text-primary" : ""}`} />
-            <span className={`text-xs font-medium ${isActive("/notifications") ? "text-primary" : ""}`}>
-              Alerts
-            </span>
-            {unreadCount > 0 && (
-              <Badge 
-                variant="destructive" 
-                className="absolute -top-1 -right-1 w-5 h-5 flex items-center justify-center p-0 text-xs"
-              >
-                {unreadCount > 99 ? '99+' : unreadCount}
-              </Badge>
-            )}
-          </Link>
         </div>
       </nav>
     </>
