@@ -15,14 +15,24 @@ interface ProfileSetupProps {
 }
 
 export function ProfileSetup({ onComplete }: ProfileSetupProps) {
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
   const [step, setStep] = useState(1);
   
-  // Profile data
-  const [firstName, setFirstName] = useState("");
-  const [lastName, setLastName] = useState("");
+  // Profile data - pre-fill from existing data or user metadata
+  const [firstName, setFirstName] = useState(
+    profile?.first_name || 
+    user?.user_metadata?.first_name || 
+    user?.user_metadata?.name?.split(' ')[0] || 
+    ""
+  );
+  const [lastName, setLastName] = useState(
+    profile?.last_name || 
+    user?.user_metadata?.last_name || 
+    (user?.user_metadata?.name?.split(' ').slice(1).join(' ')) || 
+    ""
+  );
   const [tagline, setTagline] = useState("");
   
   // Image handling
@@ -119,23 +129,44 @@ export function ProfileSetup({ onComplete }: ProfileSetupProps) {
         avatarUrl = await uploadAvatar();
       }
 
-      const { error } = await supabase
+      // Check if profile exists, if not create it
+      const { data: existingProfile } = await supabase
         .from('profiles')
-        .update({
-          first_name: firstName,
-          last_name: lastName,
-          display_name: `${firstName} ${lastName}`.trim(),
-          tagline: tagline || null,
-          avatar_url: avatarUrl,
-          onboarding_completed: true
-        })
-        .eq('user_id', user.id);
+        .select('id')
+        .eq('user_id', user.id)
+        .single();
+
+      const profileData = {
+        first_name: firstName.trim(),
+        last_name: lastName.trim(),
+        display_name: `${firstName.trim()} ${lastName.trim()}`.trim(),
+        tagline: tagline?.trim() || null,
+        avatar_url: avatarUrl || profile?.avatar_url,
+        onboarding_completed: true
+      };
+
+      let error;
+      if (existingProfile) {
+        // Update existing profile
+        ({ error } = await supabase
+          .from('profiles')
+          .update(profileData)
+          .eq('user_id', user.id));
+      } else {
+        // Create new profile
+        ({ error } = await supabase
+          .from('profiles')
+          .insert({
+            user_id: user.id,
+            ...profileData
+          }));
+      }
 
       if (error) throw error;
 
       toast({
         title: "Profile Created Successfully",
-        description: "Welcome to Memory Journal. Let's capture your first meaningful moment.",
+        description: "Welcome to One Final Moment. Let's capture your first meaningful moment.",
       });
 
       onComplete();
@@ -208,6 +239,11 @@ export function ProfileSetup({ onComplete }: ProfileSetupProps) {
                   </CardTitle>
                   <CardDescription className="text-base text-muted-foreground leading-relaxed">
                     Help us personalize your memory journal experience with your name and details.
+                    {(firstName || lastName) && (
+                      <span className="block mt-2 text-sm text-primary font-medium">
+                        ✓ We've pre-filled your name - feel free to edit it if needed
+                      </span>
+                    )}
                   </CardDescription>
                 </CardHeader>
                 

@@ -165,12 +165,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     
     const redirectUrl = `${window.location.origin}/`;
     
+    // Parse name if provided
+    let firstName = '';
+    let lastName = '';
+    if (name) {
+      const nameParts = name.trim().split(' ');
+      firstName = nameParts[0] || '';
+      lastName = nameParts.slice(1).join(' ') || '';
+    }
+    
     const { error } = await supabase.auth.signUp({
       email,
       password,
       options: {
         emailRedirectTo: redirectUrl,
         data: {
+          first_name: firstName || email.split('@')[0],
+          last_name: lastName,
           name: name || email.split('@')[0]
         }
       }

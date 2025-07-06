@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { VideoDetailModal } from "@/components/VideoDetailModal";
 import { VideoLikeButton } from "@/components/VideoLikeButton";
+import { ProfileSetup } from "@/components/ProfileSetup";
 
 export default function Index() {
   const { user, profile, isLoading } = useAuth();
@@ -134,12 +135,24 @@ export default function Index() {
     return null;
   }
 
-  // If user exists but no profile, show basic dashboard
-  const displayProfile = profile || {
-    first_name: user.user_metadata?.name || user.email?.split('@')[0] || 'Friend',
-    tagline: null,
-    first_video_recorded: false
-  };
+  // Check if user needs to complete profile setup
+  const needsProfileSetup = !profile || !profile.onboarding_completed || 
+    !profile.first_name || !profile.last_name;
+
+  // Show profile setup if needed
+  if (needsProfileSetup) {
+    return (
+      <ProfileSetup 
+        onComplete={() => {
+          // Refresh profile after setup
+          window.location.reload();
+        }} 
+      />
+    );
+  }
+
+  // If user exists and has complete profile, show dashboard
+  const displayProfile = profile;
 
   const hasVideos = userStats.total > 0;
   const isFirstTime = !displayProfile.first_video_recorded;
