@@ -24,6 +24,8 @@ interface AuthContextType {
   signup: (email: string, password: string, name?: string) => Promise<boolean>;
   logout: () => void;
   isLoading: boolean;
+  error: string | null;
+  retry: () => void;
   refreshProfile: () => Promise<void>;
 }
 
@@ -35,27 +37,42 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [hasTriggeredWelcome, setHasTriggeredWelcome] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [retryCount, setRetryCount] = useState(0);
 
-  const fetchProfile = async (userId: string) => {
+  const fetchProfile = async (userId: string, timeout = 10000) => {
     try {
       console.log('Fetching profile for user:', userId);
+      setError(null);
       
-      const { data, error } = await supabase
+      // Create a timeout promise
+      const timeoutPromise = new Promise((_, reject) => {
+        setTimeout(() => reject(new Error('Profile fetch timeout')), timeout);
+      });
+
+      // Race between the actual request and timeout
+      const profilePromise = supabase
         .from('profiles')
         .select('*')
         .eq('user_id', userId)
         .single();
 
+      const { data, error } = await Promise.race([profilePromise, timeoutPromise]) as any;
+
       console.log('Profile fetch result:', { data, error });
 
       if (error && error.code !== 'PGRST116') {
         console.error('Error fetching profile:', error);
-        return;
+        setError('Failed to load profile data');
+        return false;
       }
 
       setProfile(data || null);
+      return true;
     } catch (error) {
       console.error('Error fetching profile:', error);
+      setError(error instanceof Error ? error.message : 'Failed to load profile');
+      return false;
     }
   };
 
@@ -65,8 +82,40 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  const retry = async () => {
+    if (user) {
+      setIsLoading(true);
+      setRetryCount(prev => prev + 1);
+      const success = await fetchProfile(user.id);
+      if (success) {
+        setError(null);
+      }
+      setIsLoading(false);
+    } else {
+      // If no user, try to get session again
+      setIsLoading(true);
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session?.user) {
+          setSession(session);
+          setUser(session.user);
+          const success = await fetchProfile(session.user.id);
+          if (success) {
+            setError(null);
+          }
+        } else {
+          setError('No user session found. Please log in again.');
+        }
+      } catch (error) {
+        setError('Failed to restore session');
+      }
+      setIsLoading(false);
+    }
+  };
+
   useEffect(() => {
     let isMounted = true;
+    let profileFetched = false;
     
     // Set up auth state listener FIRST
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
@@ -77,9 +126,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setUser(session?.user ?? null);
         
         if (session?.user) {
-          // Fetch profile data when user is authenticated - only if we don't have it yet
-          if (!profile || profile.user_id !== session.user.id) {
-            fetchProfile(session.user.id);
+          // Only fetch profile if we haven't already fetched it for this user
+          if (!profileFetched) {
+            profileFetched = true;
+            const success = await fetchProfile(session.user.id);
+            if (!success) {
+              profileFetched = false; // Allow retry on failure
+            }
           }
 
           // Create welcome notification for new signups - but only once
@@ -141,6 +194,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         } else {
           setProfile(null);
           setHasTriggeredWelcome(false);
+          profileFetched = false;
         }
         
         setIsLoading(false);
@@ -148,17 +202,27 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     );
 
     // THEN check for existing session
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    supabase.auth.getSession().then(async ({ data: { session } }) => {
       if (!isMounted) return;
       
       setSession(session);
       setUser(session?.user ?? null);
       
       if (session?.user) {
-        fetchProfile(session.user.id);
+        profileFetched = true;
+        const success = await fetchProfile(session.user.id);
+        if (!success) {
+          profileFetched = false; // Allow retry on failure
+        }
       }
       
       setIsLoading(false);
+    }).catch((error) => {
+      if (isMounted) {
+        console.error('Error getting session:', error);
+        setError('Failed to restore session');
+        setIsLoading(false);
+      }
     });
 
     return () => {
@@ -238,6 +302,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       signup, 
       logout, 
       isLoading,
+      error,
+      retry,
       refreshProfile 
     }}>
       {children}

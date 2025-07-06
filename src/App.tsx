@@ -24,16 +24,38 @@ import NotFound from "./pages/NotFound";
 import { useAuth } from "@/contexts/AuthContext";
 
 function AppRoutes() {
-  const { user, profile, isLoading } = useAuth();
+  const { user, profile, isLoading, error, retry } = useAuth();
 
   if (isLoading) {
     return (
       <div className="min-h-screen bg-gradient-comfort flex items-center justify-center">
-        <div className="text-center space-y-4">
+        <div className="text-center space-y-4 max-w-sm mx-auto px-6">
           <div className="w-12 h-12 bg-gradient-primary rounded-2xl flex items-center justify-center mx-auto shadow-gentle animate-pulse">
             <div className="w-6 h-6 rounded-full bg-primary-foreground/50" />
           </div>
           <p className="text-muted-foreground">Loading your experience...</p>
+          
+          {error && (
+            <div className="mt-6 p-4 bg-destructive/10 border border-destructive/20 rounded-lg">
+              <p className="text-sm text-destructive font-medium mb-3">
+                {error}
+              </p>
+              <div className="flex flex-col gap-2">
+                <button
+                  onClick={retry}
+                  className="px-4 py-2 bg-primary text-primary-foreground rounded-md text-sm font-medium hover:bg-primary/90 transition-colors"
+                >
+                  Try Again
+                </button>
+                <button
+                  onClick={() => window.location.href = '/auth'}
+                  className="px-4 py-2 bg-muted text-muted-foreground rounded-md text-sm font-medium hover:bg-muted/80 transition-colors"
+                >
+                  Back to Login
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       </div>
     );
