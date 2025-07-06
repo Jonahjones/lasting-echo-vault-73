@@ -8,6 +8,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { VideoDetailModal } from "@/components/VideoDetailModal";
 import { VideoLikeButton } from "@/components/VideoLikeButton";
 import { ProfileSetup } from "@/components/ProfileSetup";
+import { VideoPlayerCard } from "@/components/VideoPlayerCard";
 
 export default function Index() {
   const { user, profile, isLoading } = useAuth();
@@ -50,7 +51,7 @@ export default function Index() {
         setUserStats(stats);
 
         // Load inspiring public videos (prioritize recent and most-liked, but only featured ones)
-        const { data: publicVids } = await supabase
+        const { data: publicVids, error: videosError } = await supabase
           .from('videos')
           .select('id, title, description, created_at, likes_count, user_id, file_path')
           .eq('is_public', true)
@@ -58,6 +59,12 @@ export default function Index() {
           .order('likes_count', { ascending: false })
           .order('created_at', { ascending: false })
           .limit(10);
+
+        if (videosError) {
+          console.error('Error loading public videos:', videosError);
+        } else {
+          console.log('Loaded public videos:', publicVids?.length || 0, 'featured videos');
+        }
 
         setPublicVideos(publicVids || []);
       } catch (error) {
@@ -227,36 +234,11 @@ export default function Index() {
         ) : displayedVideos.length > 0 ? (
           <div className="flex space-x-4 px-6 max-w-lg mx-auto">
             {displayedVideos.map((video) => (
-               <Card 
+              <VideoPlayerCard
                 key={video.id}
-                className="flex-shrink-0 w-64 shadow-gentle hover:shadow-comfort transition-all duration-300 cursor-pointer hover:scale-[1.02]"
+                video={video}
                 onClick={() => handleVideoClick(video)}
-              >
-                <CardContent className="p-4 relative">
-                  {/* Public Status Icon */}
-                  <div className="absolute top-2 right-2 w-6 h-6 bg-blue-500/90 rounded-full flex items-center justify-center">
-                    <LockOpen className="w-3 h-3 text-white" />
-                  </div>
-                  
-                  <div className="w-12 h-12 bg-gradient-accent rounded-2xl flex items-center justify-center mb-3">
-                    <Play className="w-6 h-6 text-accent-foreground" />
-                  </div>
-                  <h4 className="font-semibold text-foreground mb-2 line-clamp-2">
-                    {video.title}
-                  </h4>
-                  <p className="text-sm text-muted-foreground line-clamp-3 mb-3">
-                    {video.description || "A meaningful message shared with love"}
-                  </p>
-                  <div className="flex items-center justify-between text-xs text-muted-foreground">
-                    <span>{new Date(video.created_at).toLocaleDateString()}</span>
-                    <VideoLikeButton 
-                      videoId={video.id} 
-                      variant="inline" 
-                      size="sm"
-                    />
-                  </div>
-                </CardContent>
-              </Card>
+              />
             ))}
           </div>
         ) : (

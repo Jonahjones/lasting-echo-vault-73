@@ -18,7 +18,7 @@ export function VideoPreview({ videoId, title, filePath, className = "" }: Video
 
   const loadVideoUrl = async () => {
     if (!filePath) {
-      setError("Video file not found");
+      setError("Video file not found - no file path provided");
       return;
     }
 
@@ -26,22 +26,33 @@ export function VideoPreview({ videoId, title, filePath, className = "" }: Video
     setError("");
 
     try {
+      // First check if file exists in storage
+      const { data: fileData, error: listError } = await supabase.storage
+        .from('videos')
+        .list('', { search: filePath.split('/').pop() });
+
+      if (listError) {
+        console.warn('Storage list error:', listError);
+      }
+
       const { data, error: urlError } = await supabase.storage
         .from('videos')
         .createSignedUrl(filePath, 3600); // 1 hour expiry
 
       if (urlError) {
-        throw urlError;
+        console.error('URL generation error:', urlError);
+        throw new Error(`Failed to generate video URL: ${urlError.message}`);
       }
 
       if (data?.signedUrl) {
+        console.log('Video URL generated successfully:', data.signedUrl);
         setVideoUrl(data.signedUrl);
       } else {
-        setError("Could not generate video URL");
+        setError("Could not generate video URL - no signed URL returned");
       }
     } catch (err) {
       console.error('Error loading video URL:', err);
-      setError("Failed to load video");
+      setError(err instanceof Error ? err.message : "Failed to load video");
     } finally {
       setLoading(false);
     }

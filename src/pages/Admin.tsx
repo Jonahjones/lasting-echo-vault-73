@@ -183,36 +183,44 @@ export default function Admin() {
   };
 
   const toggleFeatured = async (videoId: string, currentlyFeatured: boolean) => {
+    const newFeaturedState = !currentlyFeatured;
+    console.log(`Admin action: ${newFeaturedState ? 'Featuring' : 'Unfeaturing'} video ${videoId}`);
+    
     try {
       const { error } = await supabase
         .from('videos')
-        .update({ is_featured: !currentlyFeatured })
+        .update({ is_featured: newFeaturedState })
         .eq('id', videoId);
 
-      if (error) throw error;
+      if (error) {
+        console.error('Database update error:', error);
+        throw error;
+      }
+
+      console.log(`Successfully ${newFeaturedState ? 'featured' : 'unfeatured'} video in database`);
 
       // Update local state
       setVideos(prev => prev.map(video => 
         video.id === videoId 
-          ? { ...video, is_featured: !currentlyFeatured }
+          ? { ...video, is_featured: newFeaturedState }
           : video
       ));
 
       // Log the action
       logAdminAction(
-        !currentlyFeatured ? "FEATURE_VIDEO" : "UNFEATURE_VIDEO", 
-        { videoId, title: videos.find(v => v.id === videoId)?.title }
+        newFeaturedState ? "FEATURE_VIDEO" : "UNFEATURE_VIDEO", 
+        { videoId, title: videos.find(v => v.id === videoId)?.title, newState: newFeaturedState }
       );
 
       toast({
         title: "Video Updated",
-        description: `Video ${!currentlyFeatured ? 'featured' : 'removed from featured'} successfully`,
+        description: `Video ${newFeaturedState ? 'featured and will appear in public feed' : 'removed from public feed'} successfully`,
       });
     } catch (error) {
       console.error('Error updating video:', error);
       toast({
         title: "Error",
-        description: "Failed to update video",
+        description: "Failed to update video status",
         variant: "destructive"
       });
     }
