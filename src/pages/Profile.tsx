@@ -237,12 +237,12 @@ export default function Profile() {
           {/* Logout */}
           <Card className="shadow-card">
             <CardContent className="pt-6 flex justify-center">
-                <Button
-                  variant="destructive"
-                  onClick={handleLogout}
-                  className="w-[90%]"
-                  size="lg"
-                >
+              <Button
+                variant="destructive"
+                onClick={handleLogout}
+                className="w-[90%]"
+                size="lg"
+              >
                 <LogOut className="w-4 h-4 mr-2" />
                 Logout
               </Button>
