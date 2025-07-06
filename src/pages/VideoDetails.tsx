@@ -354,11 +354,12 @@ export default function VideoDetails() {
               <Label>Your Contacts</Label>
               {contactsLoading ? (
                 <div className="text-center py-8">
-                  <div className="text-sm text-muted-foreground">Loading contacts...</div>
+                  <div className="text-sm text-muted-foreground">Loading your contacts...</div>
                 </div>
               ) : contacts.length === 0 ? (
-                <div className="text-center py-8">
-                  <div className="text-sm text-muted-foreground">No contacts yet. Add a contact to share your message.</div>
+                <div className="text-center py-8 space-y-2">
+                  <div className="text-sm text-muted-foreground">No contacts yet.</div>
+                  <div className="text-xs text-muted-foreground">Add a contact below to share your message.</div>
                 </div>
               ) : (
                 contacts.map((contact) => (
