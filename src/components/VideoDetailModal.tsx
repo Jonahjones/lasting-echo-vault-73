@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Play, User, Calendar, AlertCircle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { VideoLikeButton } from "@/components/VideoLikeButton";
+import { UserLevelBadge } from "@/components/gamification/UserLevelBadge";
 import { format } from "date-fns";
 
 interface VideoDetailModalProps {
@@ -150,10 +151,19 @@ export function VideoDetailModal({ video, isOpen, onClose }: VideoDetailModalPro
                 <User className="w-5 h-5 text-primary" />
               </div>
               <div className="flex-1">
-                <p className="font-medium text-foreground">{creatorName}</p>
-                {creatorProfile?.tagline && (
-                  <p className="text-sm text-muted-foreground italic">"{creatorProfile.tagline}"</p>
-                )}
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="font-medium text-foreground">{creatorName}</p>
+                    {creatorProfile?.tagline && (
+                      <p className="text-sm text-muted-foreground italic">"{creatorProfile.tagline}"</p>
+                    )}
+                  </div>
+                  <UserLevelBadge 
+                    userId={video.user_id} 
+                    userName={creatorName}
+                    size="sm" 
+                  />
+                </div>
               </div>
             </div>
 

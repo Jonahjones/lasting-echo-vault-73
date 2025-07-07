@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Play, AlertCircle, LockOpen } from "lucide-react";
 import { VideoLikeButton } from "@/components/VideoLikeButton";
+import { UserLevelBadge } from "@/components/gamification/UserLevelBadge";
 import { supabase } from "@/integrations/supabase/client";
 
 interface VideoPlayerCardProps {
@@ -11,6 +12,7 @@ interface VideoPlayerCardProps {
     description?: string;
     created_at: string;
     file_path?: string;
+    user_id?: string;
   };
   onClick?: () => void;
   className?: string;
@@ -20,13 +22,37 @@ export function VideoPlayerCard({ video, onClick, className = "" }: VideoPlayerC
   const [thumbnailUrl, setThumbnailUrl] = useState<string>("");
   const [error, setError] = useState<string>("");
   const [loading, setLoading] = useState(false);
+  const [creatorName, setCreatorName] = useState<string>("Anonymous");
 
   // Generate thumbnail or get video URL
   useEffect(() => {
     if (video.file_path) {
       generateThumbnail();
     }
-  }, [video.file_path]);
+    if (video.user_id) {
+      loadCreatorName();
+    }
+  }, [video.file_path, video.user_id]);
+
+  const loadCreatorName = async () => {
+    if (!video.user_id) return;
+
+    try {
+      const { data } = await supabase
+        .from('profiles')
+        .select('display_name, first_name, last_name')
+        .eq('user_id', video.user_id)
+        .single();
+
+      if (data) {
+        const name = data.display_name || 
+          (data.first_name ? `${data.first_name} ${data.last_name || ''}`.trim() : 'Anonymous');
+        setCreatorName(name);
+      }
+    } catch (error) {
+      console.error('Error loading creator name:', error);
+    }
+  };
 
   const generateThumbnail = async () => {
     if (!video.file_path) {
@@ -113,6 +139,18 @@ export function VideoPlayerCard({ video, onClick, className = "" }: VideoPlayerC
         <p className="text-sm text-muted-foreground line-clamp-3 mb-3">
           {video.description || "A meaningful message shared with love"}
         </p>
+        
+        {/* Creator Level Badge */}
+        {video.user_id && (
+          <div className="mb-3">
+            <UserLevelBadge 
+              userId={video.user_id} 
+              userName={creatorName}
+              size="sm" 
+            />
+          </div>
+        )}
+        
         <div className="flex items-center justify-between text-xs text-muted-foreground">
           <span>{new Date(video.created_at).toLocaleDateString()}</span>
           <VideoLikeButton 
