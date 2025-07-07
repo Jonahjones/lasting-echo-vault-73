@@ -90,80 +90,38 @@ export default function Admin() {
     e.preventDefault();
     if (password === ADMIN_PASSWORD) {
       try {
-        // If not logged in, sign in or create dedicated admin account
+        // Check if user is logged in
         if (!user) {
-          console.log('🔐 Attempting admin signin...');
-          
-          // First try to sign in with existing admin account
-          let { data: authData, error: authError } = await supabase.auth.signInWithPassword({
-            email: 'admin@lovable-admin.com',
-            password: 'AdminAccess2024!'
+          toast({
+            title: "Login Required",
+            description: "Please log into your account first, then return to access admin panel.",
+            variant: "destructive"
           });
-
-          // If sign in fails, create the admin account
-          if (authError && authError.message.includes('Invalid login credentials')) {
-            console.log('🔧 Creating admin account...');
-            const { data: signupData, error: signupError } = await supabase.auth.signUp({
-              email: 'admin@lovable-admin.com',
-              password: 'AdminAccess2024!',
-              options: {
-                emailRedirectTo: `${window.location.origin}/admin`
-              }
-            });
-
-            if (signupError) {
-              console.error('❌ Admin account creation failed:', signupError);
-              toast({
-                title: "Admin Setup Failed",
-                description: "Could not create admin account. Please try again.",
-                variant: "destructive"
-              });
-              return;
-            }
-
-            authData = signupData;
-            console.log('✅ Admin account created:', authData.user?.id);
-          } else if (authError) {
-            console.error('❌ Admin signin failed:', authError);
-            toast({
-              title: "Admin Authentication Failed",
-              description: "Could not authenticate admin user. Please try again.",
-              variant: "destructive"
-            });
-            return;
-          }
-
-          console.log('✅ Admin user authenticated:', authData.user?.id);
-          
-          // Add a small delay to ensure auth state is updated
-          await new Promise(resolve => setTimeout(resolve, 1000));
+          return;
         }
 
-        // Ensure admin user is in admin_users table
-        const currentUserId = user?.id || (await supabase.auth.getUser()).data.user?.id;
-        if (currentUserId) {
-          console.log('🔧 Adding user to admin_users table:', currentUserId);
-          const { data: adminData, error: adminError } = await supabase
-            .from('admin_users')
-            .upsert({ 
-              user_id: currentUserId, 
-              role: 'super_admin' 
-            }, { 
-              onConflict: 'user_id' 
-            })
-            .select();
-          
-          if (adminError) {
-            console.error('❌ Failed to add to admin_users:', adminError);
-            toast({
-              title: "Admin Setup Error",
-              description: "Could not register admin permissions. Please try again.",
-              variant: "destructive"
-            });
-            return;
-          } else {
-            console.log('✅ User successfully added to admin_users table:', adminData);
-          }
+        // Add current user to admin_users table with correct passcode
+        console.log('🔧 Adding current user as admin:', user.id);
+        const { data: adminData, error: adminError } = await supabase
+          .from('admin_users')
+          .upsert({ 
+            user_id: user.id, 
+            role: 'super_admin' 
+          }, { 
+            onConflict: 'user_id' 
+          })
+          .select();
+        
+        if (adminError) {
+          console.error('❌ Failed to add to admin_users:', adminError);
+          toast({
+            title: "Admin Setup Error",
+            description: "Could not register admin permissions. Please try again.",
+            variant: "destructive"
+          });
+          return;
+        } else {
+          console.log('✅ User successfully added to admin_users table:', adminData);
         }
         
         setIsAuthenticated(true);
@@ -201,14 +159,6 @@ export default function Admin() {
     setPassword("");
     setVideos([]);
     setFilteredVideos([]);
-    
-    // Sign out from Supabase admin account
-    try {
-      await supabase.auth.signOut();
-      console.log('✅ Admin user signed out');
-    } catch (error) {
-      console.error('❌ Error signing out:', error);
-    }
     
     logAdminAction("LOGOUT", { timestamp: new Date().toISOString() });
   };
@@ -357,7 +307,7 @@ export default function Admin() {
             <div>
               <CardTitle className="text-2xl font-serif">Admin Access</CardTitle>
               <CardDescription>
-                Enter the admin password to access the panel. No account required.
+                Log into your account first, then enter the admin password to get access.
               </CardDescription>
             </div>
           </CardHeader>
