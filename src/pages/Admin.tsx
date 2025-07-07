@@ -129,38 +129,80 @@ export default function Admin() {
     e.preventDefault();
     if (password === ADMIN_PASSWORD) {
       try {
-        // Admin password requires user to be logged in for security
+        // If user is not logged in, sign in or create the dedicated admin account
         if (!user) {
-          toast({
-            title: "Login Required",
-            description: "You must be logged into your account to access admin functions.",
-            variant: "destructive"
+          console.log('🔐 Attempting admin signin with jonah3272@gmail.com...');
+          
+          // First try to sign in with the admin account
+          let { data: authData, error: authError } = await supabase.auth.signInWithPassword({
+            email: 'jonah3272@gmail.com',
+            password: 'Admin3272!'
           });
-          return;
+
+          // If account doesn't exist, create it
+          if (authError && authError.message.includes('Invalid login credentials')) {
+            console.log('🔧 Creating admin account jonah3272@gmail.com...');
+            const { data: signupData, error: signupError } = await supabase.auth.signUp({
+              email: 'jonah3272@gmail.com',
+              password: 'Admin3272!',
+              options: {
+                emailRedirectTo: `${window.location.origin}/admin`
+              }
+            });
+
+            if (signupError) {
+              console.error('❌ Admin account creation failed:', signupError);
+              toast({
+                title: "Admin Setup Failed",
+                description: "Could not create admin account. Please try again.",
+                variant: "destructive"
+              });
+              return;
+            }
+
+            authData = signupData;
+            console.log('✅ Admin account created:', authData.user?.id);
+          } else if (authError) {
+            console.error('❌ Admin signin failed:', authError);
+            toast({
+              title: "Admin Authentication Failed",
+              description: "Could not authenticate admin user. Please try again.",
+              variant: "destructive"
+            });
+            return;
+          }
+
+          console.log('✅ Admin user authenticated:', authData.user?.id);
+          
+          // Add a small delay to ensure auth state is updated
+          await new Promise(resolve => setTimeout(resolve, 1000));
         }
 
-        // Add current user to admin_users table
-        console.log('🔧 Adding current user as admin:', user.id);
-        const { data: adminData, error: adminError } = await supabase
-          .from('admin_users')
-          .upsert({ 
-            user_id: user.id, 
-            role: 'super_admin' 
-          }, { 
-            onConflict: 'user_id' 
-          })
-          .select();
-        
-        if (adminError) {
-          console.error('❌ Failed to add to admin_users:', adminError);
-          toast({
-            title: "Admin Setup Error",
-            description: "Could not register admin permissions. Please try again.",
-            variant: "destructive"
-          });
-          return;
-        } else {
-          console.log('✅ User successfully added to admin_users table:', adminData);
+        // Get current user (either existing or newly authenticated)
+        const currentUserId = user?.id || (await supabase.auth.getUser()).data.user?.id;
+        if (currentUserId) {
+          console.log('🔧 Adding user to admin_users table:', currentUserId);
+          const { data: adminData, error: adminError } = await supabase
+            .from('admin_users')
+            .upsert({ 
+              user_id: currentUserId, 
+              role: 'super_admin' 
+            }, { 
+              onConflict: 'user_id' 
+            })
+            .select();
+          
+          if (adminError) {
+            console.error('❌ Failed to add to admin_users:', adminError);
+            toast({
+              title: "Admin Setup Error",
+              description: "Could not register admin permissions. Please try again.",
+              variant: "destructive"
+            });
+            return;
+          } else {
+            console.log('✅ User successfully added to admin_users table:', adminData);
+          }
         }
         
         setIsAuthenticated(true);
@@ -171,7 +213,7 @@ export default function Admin() {
         // Log admin access
         logAdminAction("LOGIN", { 
           timestamp: new Date().toISOString(),
-          user_id: user.id
+          user_id: currentUserId
         });
         
         toast({
