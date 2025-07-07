@@ -1,4 +1,4 @@
-import { Heart, LogOut, Settings, User, Shield } from "lucide-react";
+import { Heart, LogOut, Settings, User, Shield, Users } from "lucide-react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -45,6 +45,12 @@ export function MobileHeader() {
                   <Link to="/profile" className="flex items-center cursor-pointer">
                     <User className="w-4 h-4 mr-2" />
                     Profile Settings
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                  <Link to="/contacts" className="flex items-center cursor-pointer">
+                    <Users className="w-4 h-4 mr-2" />
+                    Manage Contacts
                   </Link>
                 </DropdownMenuItem>
                 <DropdownMenuItem asChild>
