@@ -1,6 +1,6 @@
 import { Link, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Heart, Video, Users, Library, Shield } from "lucide-react";
+import { Heart, Video, Users, Library, Shield, Inbox } from "lucide-react";
 
 export function Navigation() {
   const location = useLocation();
@@ -48,6 +48,17 @@ export function Navigation() {
               <Link to="/contacts" className="flex items-center space-x-1">
                 <Users className="w-4 h-4" />
                 <span>Contacts</span>
+              </Link>
+            </Button>
+            
+            <Button
+              variant={isActive("/shared-with-me") ? "default" : "ghost"}
+              size="sm"
+              asChild
+            >
+              <Link to="/shared-with-me" className="flex items-center space-x-1">
+                <Inbox className="w-4 h-4" />
+                <span>Shared</span>
               </Link>
             </Button>
             

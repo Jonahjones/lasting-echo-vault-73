@@ -64,6 +64,7 @@ export type Database = {
           email: string | null
           full_name: string
           id: string
+          invitation_status: string | null
           is_primary: boolean | null
           phone: string | null
           relationship: string | null
@@ -77,6 +78,7 @@ export type Database = {
           email?: string | null
           full_name: string
           id?: string
+          invitation_status?: string | null
           is_primary?: boolean | null
           phone?: string | null
           relationship?: string | null
@@ -90,6 +92,7 @@ export type Database = {
           email?: string | null
           full_name?: string
           id?: string
+          invitation_status?: string | null
           is_primary?: boolean | null
           phone?: string | null
           relationship?: string | null
@@ -283,6 +286,53 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "video_reports_video_id_fkey"
+            columns: ["video_id"]
+            isOneToOne: false
+            referencedRelation: "videos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      video_shares: {
+        Row: {
+          created_at: string
+          id: string
+          owner_id: string
+          recipient_email: string
+          recipient_id: string
+          shared_at: string
+          status: string
+          updated_at: string
+          video_id: string
+          viewed_at: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          owner_id: string
+          recipient_email: string
+          recipient_id: string
+          shared_at?: string
+          status?: string
+          updated_at?: string
+          video_id: string
+          viewed_at?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          owner_id?: string
+          recipient_email?: string
+          recipient_id?: string
+          shared_at?: string
+          status?: string
+          updated_at?: string
+          video_id?: string
+          viewed_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "video_shares_video_id_fkey"
             columns: ["video_id"]
             isOneToOne: false
             referencedRelation: "videos"

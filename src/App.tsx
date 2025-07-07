@@ -21,6 +21,7 @@ import Library from "./pages/Library";
 import Profile from "./pages/Profile";
 import Admin from "./pages/Admin";
 import Notifications from "./pages/Notifications";
+import SharedWithMe from "./pages/SharedWithMe";
 import NotFound from "./pages/NotFound";
 import { useAuth } from "@/contexts/AuthContext";
 import { useState, useEffect } from "react";
@@ -141,6 +142,7 @@ function AppRoutes() {
         <Route path="/video-details" element={<VideoDetails />} />
         <Route path="/contacts" element={<Contacts />} />
         <Route path="/library" element={<Library />} />
+        <Route path="/shared-with-me" element={<SharedWithMe />} />
         <Route path="/notifications" element={<Notifications />} />
         <Route path="/profile" element={<Profile />} />
         <Route path="/admin" element={<Admin />} />

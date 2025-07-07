@@ -1,9 +1,10 @@
 import { Link, useLocation } from "react-router-dom";
-import { Heart, Video, Users, Library, Settings, Bell } from "lucide-react";
+import { Heart, Video, Users, Library, Settings, Bell, Inbox } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
 import { useNotifications } from "@/contexts/NotificationsContext";
+import { useVideoShares } from "@/hooks/useVideoShares";
 import { NotificationsCenter } from "./NotificationsCenter";
 import { useState } from "react";
 
@@ -11,15 +12,19 @@ export function BottomNavigation() {
   const location = useLocation();
   const { user } = useAuth();
   const { unreadCount } = useNotifications();
+  const { sharedWithMe } = useVideoShares();
   const [showNotifications, setShowNotifications] = useState(false);
   
   const isActive = (path: string) => location.pathname === path;
   
+  // Count unread shared videos
+  const unreadSharedCount = sharedWithMe.filter(share => !share.viewed_at).length;
+  
   const navItems = [
     { path: "/", icon: Heart, label: "Home" },
     { path: "/record", icon: Video, label: "Record" },
+    { path: "/shared-with-me", icon: Inbox, label: "Shared" },
     { path: "/library", icon: Library, label: "Library" },
-    { path: "/contacts", icon: Users, label: "Contacts" },
     { path: "/notifications", icon: Bell, label: "Alerts" },
   ];
 
@@ -52,6 +57,14 @@ export function BottomNavigation() {
                   className="absolute -top-1 -right-1 w-5 h-5 flex items-center justify-center p-0 text-xs"
                 >
                   {unreadCount > 99 ? '99+' : unreadCount}
+                </Badge>
+              )}
+              {path === "/shared-with-me" && unreadSharedCount > 0 && (
+                <Badge 
+                  variant="destructive" 
+                  className="absolute -top-1 -right-1 w-5 h-5 flex items-center justify-center p-0 text-xs"
+                >
+                  {unreadSharedCount > 99 ? '99+' : unreadSharedCount}
                 </Badge>
               )}
             </Link>
