@@ -57,6 +57,36 @@ export type Database = {
         }
         Relationships: []
       }
+      badge_definitions: {
+        Row: {
+          color: string
+          created_at: string
+          description: string | null
+          id: string
+          level_required: number
+          name: string
+          svg_icon: string
+        }
+        Insert: {
+          color?: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          level_required: number
+          name: string
+          svg_icon: string
+        }
+        Update: {
+          color?: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          level_required?: number
+          name?: string
+          svg_icon?: string
+        }
+        Relationships: []
+      }
       contacts: {
         Row: {
           contact_type: Database["public"]["Enums"]["contact_type"]
@@ -120,6 +150,30 @@ export type Database = {
           date?: string
           id?: string
           prompt_text?: string
+        }
+        Relationships: []
+      }
+      daily_xp_caps: {
+        Row: {
+          action_type: string
+          cap_date: string
+          current_count: number
+          id: string
+          user_id: string
+        }
+        Insert: {
+          action_type: string
+          cap_date?: string
+          current_count?: number
+          id?: string
+          user_id: string
+        }
+        Update: {
+          action_type?: string
+          cap_date?: string
+          current_count?: number
+          id?: string
+          user_id?: string
         }
         Relationships: []
       }
@@ -229,6 +283,33 @@ export type Database = {
           last_name?: string | null
           onboarding_completed?: boolean
           tagline?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      user_gamification: {
+        Row: {
+          created_at: string
+          current_level: number
+          id: string
+          total_xp: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          current_level?: number
+          id?: string
+          total_xp?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          current_level?: number
+          id?: string
+          total_xp?: number
           updated_at?: string
           user_id?: string
         }
@@ -409,6 +490,69 @@ export type Database = {
           title?: string
           updated_at?: string
           user_id?: string
+        }
+        Relationships: []
+      }
+      xp_config: {
+        Row: {
+          action_type: string
+          created_at: string
+          daily_cap: number
+          description: string | null
+          id: string
+          is_active: boolean
+          updated_at: string
+          xp_amount: number
+        }
+        Insert: {
+          action_type: string
+          created_at?: string
+          daily_cap?: number
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          updated_at?: string
+          xp_amount: number
+        }
+        Update: {
+          action_type?: string
+          created_at?: string
+          daily_cap?: number
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          updated_at?: string
+          xp_amount?: number
+        }
+        Relationships: []
+      }
+      xp_transactions: {
+        Row: {
+          action_type: string
+          created_at: string
+          id: string
+          reference_id: string | null
+          transaction_date: string
+          user_id: string
+          xp_amount: number
+        }
+        Insert: {
+          action_type: string
+          created_at?: string
+          id?: string
+          reference_id?: string | null
+          transaction_date?: string
+          user_id: string
+          xp_amount: number
+        }
+        Update: {
+          action_type?: string
+          created_at?: string
+          id?: string
+          reference_id?: string | null
+          transaction_date?: string
+          user_id?: string
+          xp_amount?: number
         }
         Relationships: []
       }

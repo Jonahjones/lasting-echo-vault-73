@@ -4,11 +4,15 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
-import { User, Bell, Globe, LogOut, Mail, Smartphone, Edit } from "lucide-react";
+import { User, Bell, Globe, LogOut, Mail, Smartphone, Edit, Trophy, Target } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { ProfileEditForm } from "@/components/ProfileEditForm";
+import { LevelBadge } from "@/components/gamification/LevelBadge";
+import { XPProgressBar } from "@/components/gamification/XPProgressBar";
+import { BadgeShowcase } from "@/components/gamification/BadgeShowcase";
+import { XPHistoryCard } from "@/components/gamification/XPHistoryCard";
 
 export default function Profile() {
   const { user, logout, profile } = useAuth();
@@ -104,13 +108,19 @@ export default function Profile() {
               <CardContent>
                 <div className="space-y-6">
                   {/* Avatar Section */}
-                  <div className="flex flex-col items-center">
+                  <div className="flex flex-col items-center space-y-4">
                     <Avatar className="w-24 h-24 border-2 border-border">
                       <AvatarImage src={profile?.avatar_url || undefined} />
                       <AvatarFallback className="bg-primary/10 text-primary text-2xl">
                         {userInitials}
                       </AvatarFallback>
                     </Avatar>
+                    
+                    {/* Level Badge and XP Progress */}
+                    <div className="text-center space-y-3">
+                      <LevelBadge size="lg" showXP />
+                      <XPProgressBar />
+                    </div>
                   </div>
                   
                   <Separator />
@@ -136,6 +146,12 @@ export default function Profile() {
               </CardContent>
             </Card>
           )}
+
+          {/* Gamification Section */}
+          <div className="grid gap-6 mb-6">
+            <BadgeShowcase />
+            <XPHistoryCard />
+          </div>
 
           {/* Profile Visibility */}
           <Card className="shadow-card mb-6">

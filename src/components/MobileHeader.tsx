@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { useAuth } from "@/contexts/AuthContext";
+import { LevelBadge } from "@/components/gamification/LevelBadge";
 import { useState } from "react";
 
 export function MobileHeader() {
@@ -26,6 +27,7 @@ export function MobileHeader() {
           </Link>
           
           <div className="flex items-center space-x-2">
+            <LevelBadge size="sm" />
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" size="sm" className="flex items-center space-x-2">
