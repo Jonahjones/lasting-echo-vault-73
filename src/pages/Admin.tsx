@@ -92,12 +92,40 @@ export default function Admin() {
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
+      // First try to sign in with provided credentials
+      let { data: authData, error: authError } = await supabase.auth.signInWithPassword({
         email,
         password: loginPassword
       });
 
-      if (authError) {
+      // If login fails and this is the admin email, try to create the account
+      if (authError && email === 'jonah3272@gmail.com') {
+        console.log('🔧 Creating admin account for jonah3272@gmail.com...');
+        const { data: signupData, error: signupError } = await supabase.auth.signUp({
+          email: 'jonah3272@gmail.com',
+          password: loginPassword, // Use the password they entered
+          options: {
+            emailRedirectTo: `${window.location.origin}/admin`
+          }
+        });
+
+        if (signupError) {
+          toast({
+            title: "Account Creation Failed",
+            description: signupError.message,
+            variant: "destructive"
+          });
+          return;
+        }
+
+        authData = signupData;
+        console.log('✅ Admin account created:', authData.user?.id);
+        
+        toast({
+          title: "Account Created",
+          description: "Admin account created successfully. You can now access the admin panel.",
+        });
+      } else if (authError) {
         toast({
           title: "Login Failed",
           description: authError.message,
@@ -107,6 +135,35 @@ export default function Admin() {
       }
 
       console.log('✅ User logged in:', authData.user?.id);
+      
+      // If this is the admin email, add them to admin_users table
+      if (email === 'jonah3272@gmail.com' && authData.user) {
+        const { error: adminError } = await supabase
+          .from('admin_users')
+          .upsert({ 
+            user_id: authData.user.id, 
+            role: 'super_admin' 
+          }, { 
+            onConflict: 'user_id' 
+          });
+        
+        if (!adminError) {
+          console.log('✅ User added to admin_users table');
+          setIsAuthenticated(true);
+          loadVideos();
+          
+          toast({
+            title: "Admin Access Granted",
+            description: "Welcome to the admin panel",
+          });
+          
+          setShowLoginForm(false);
+          setEmail("");
+          setLoginPassword("");
+          return;
+        }
+      }
+      
       setShowLoginForm(false);
       setEmail("");
       setLoginPassword("");
