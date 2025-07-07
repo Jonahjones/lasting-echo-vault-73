@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { useAuth } from "@/contexts/AuthContext";
+import { LevelInfoPopover } from "@/components/gamification/LevelInfoPopover";
 import { LevelBadge } from "@/components/gamification/LevelBadge";
 import { useState } from "react";
 
@@ -14,6 +15,10 @@ export function MobileHeader() {
     logout();
     window.location.href = "/auth";
   };
+
+  const displayName = profile?.display_name || 
+    (profile?.first_name ? `${profile.first_name} ${profile.last_name || ''}`.trim() : '') ||
+    user?.email || 'User';
 
   return (
     <header className="bg-card border-b border-border shadow-card sticky top-0 z-40">
@@ -27,7 +32,17 @@ export function MobileHeader() {
           </Link>
           
           <div className="flex items-center space-x-2">
-            <LevelBadge size="sm" />
+            {user && (
+              <LevelInfoPopover 
+                userId={user.id} 
+                userName={displayName}
+                trigger={
+                  <div className="cursor-pointer hover:opacity-80 transition-opacity">
+                    <LevelBadge size="sm" />
+                  </div>
+                }
+              />
+            )}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" size="sm" className="flex items-center space-x-2">
@@ -38,7 +53,7 @@ export function MobileHeader() {
                     </AvatarFallback>
                   </Avatar>
                   <span className="text-sm font-medium truncate max-w-20">
-                    {profile?.display_name || (profile?.first_name ? `${profile.first_name} ${profile.last_name || ''}`.trim() : '') || user?.email || 'User'}
+                    {displayName}
                   </span>
                 </Button>
               </DropdownMenuTrigger>
