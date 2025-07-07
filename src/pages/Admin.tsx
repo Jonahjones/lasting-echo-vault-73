@@ -89,40 +89,47 @@ export default function Admin() {
   const handlePasswordSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (password === ADMIN_PASSWORD) {
-      // Add current user to admin_users table BEFORE setting authenticated
-      if (user) {
-        try {
-          console.log('🔧 Adding user to admin_users table:', user.id);
-          const { data: adminData, error: adminError } = await supabase
-            .from('admin_users')
-            .upsert({ 
-              user_id: user.id, 
-              role: 'moderator' 
-            }, { 
-              onConflict: 'user_id' 
-            })
-            .select();
-          
-          if (adminError) {
-            console.error('❌ Failed to add to admin_users:', adminError);
-            toast({
-              title: "Admin Setup Error",
-              description: "Could not register admin permissions. Please try again.",
-              variant: "destructive"
-            });
-            return;
-          } else {
-            console.log('✅ User successfully added to admin_users table:', adminData);
-          }
-        } catch (error) {
-          console.error('❌ Admin table update failed:', error);
+      // Check if user is logged into Supabase
+      if (!user) {
+        toast({
+          title: "Authentication Required",
+          description: "Please log into your Supabase account first, then access the admin panel.",
+          variant: "destructive"
+        });
+        return;
+      }
+
+      try {
+        console.log('🔧 Adding user to admin_users table:', user.id);
+        const { data: adminData, error: adminError } = await supabase
+          .from('admin_users')
+          .upsert({ 
+            user_id: user.id, 
+            role: 'moderator' 
+          }, { 
+            onConflict: 'user_id' 
+          })
+          .select();
+        
+        if (adminError) {
+          console.error('❌ Failed to add to admin_users:', adminError);
           toast({
-            title: "Admin Setup Error", 
-            description: "Database error. Please try again.",
+            title: "Admin Setup Error",
+            description: "Could not register admin permissions. Please try again.",
             variant: "destructive"
           });
           return;
+        } else {
+          console.log('✅ User successfully added to admin_users table:', adminData);
         }
+      } catch (error) {
+        console.error('❌ Admin table update failed:', error);
+        toast({
+          title: "Admin Setup Error", 
+          description: "Database error. Please try again.",
+          variant: "destructive"
+        });
+        return;
       }
       
       setIsAuthenticated(true);
@@ -299,7 +306,7 @@ export default function Admin() {
             <div>
               <CardTitle className="text-2xl font-serif">Admin Access</CardTitle>
               <CardDescription>
-                Enter the admin password to continue
+                You must be logged into your account first. Then enter the admin password.
               </CardDescription>
             </div>
           </CardHeader>
