@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
+import { useGamification } from "@/hooks/useGamification";
 
 interface VideoLikeData {
   hasLiked: boolean;
@@ -12,6 +13,7 @@ interface VideoLikeData {
 export function useVideoLikes(videoId: string) {
   const { user } = useAuth();
   const { toast } = useToast();
+  const { awardXP } = useGamification();
   const [likeData, setLikeData] = useState<VideoLikeData>({
     hasLiked: false,
     likesCount: 0,
@@ -149,6 +151,28 @@ export function useVideoLikes(videoId: string) {
           likesCount: prev.likesCount + 1,
           isLoading: false
         }));
+
+        // Award XP to video owner for receiving a like
+        try {
+          const { data: video } = await supabase
+            .from('videos')
+            .select('user_id')
+            .eq('id', videoId)
+            .single();
+          
+          if (video && video.user_id !== user.id) {
+            // Award XP to the video owner (not the liker)
+            await supabase.functions.invoke('award-xp', {
+              body: {
+                userId: video.user_id,
+                actionType: 'video_like',
+                referenceId: videoId
+              }
+            });
+          }
+        } catch (error) {
+          console.error('Error awarding XP for like:', error);
+        }
       }
     } catch (error) {
       console.error('Error toggling like:', error);

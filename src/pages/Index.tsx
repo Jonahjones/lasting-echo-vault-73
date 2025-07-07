@@ -9,10 +9,14 @@ import { VideoDetailModal } from "@/components/VideoDetailModal";
 import { VideoLikeButton } from "@/components/VideoLikeButton";
 import { ProfileSetup } from "@/components/ProfileSetup";
 import { VideoPlayerCard } from "@/components/VideoPlayerCard";
+import { LevelBadge } from "@/components/gamification/LevelBadge";
+import { XPProgressBar } from "@/components/gamification/XPProgressBar";
+import { useGamification } from "@/hooks/useGamification";
 
 export default function Index() {
   const { user, profile, isLoading } = useAuth();
   const navigate = useNavigate();
+  const { userGamification, awardXP } = useGamification();
   const [userStats, setUserStats] = useState({ total: 0, scheduled: 0, delivered: 0 });
   const [publicVideos, setPublicVideos] = useState<any[]>([]);
   const [displayedVideos, setDisplayedVideos] = useState<any[]>([]);
@@ -237,6 +241,43 @@ export default function Index() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Gamification Progress Section */}
+      {userGamification && (
+        <div className="px-6 mb-8 max-w-lg mx-auto">
+          <Card className="shadow-comfort bg-gradient-to-br from-primary/5 to-accent/5 border border-primary/20">
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-serif font-medium text-foreground">Your Progress</h3>
+                <LevelBadge size="md" showXP />
+              </div>
+              <XPProgressBar showDetails />
+              {userGamification.total_xp === 0 && (
+                <div className="mt-4 p-3 bg-primary/10 rounded-lg border border-primary/20">
+                  <p className="text-sm text-primary font-medium mb-1">🎯 Start earning XP!</p>
+                  <p className="text-xs text-muted-foreground mb-3">
+                    Record your first video to earn +10 XP and unlock your journey!
+                  </p>
+                  <Button 
+                    size="sm" 
+                    variant="outline" 
+                    onClick={async () => {
+                      try {
+                        await awardXP('video_create');
+                      } catch (error) {
+                        console.error('Test XP error:', error);
+                      }
+                    }}
+                    className="text-xs"
+                  >
+                    🧪 Test XP System
+                  </Button>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </div>
+      )}
 
       {/* Inspirational Community Carousel */}
       <div className="mb-8">

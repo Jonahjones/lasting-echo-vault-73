@@ -176,6 +176,36 @@ export function VideoLibraryProvider({ children }: { children: React.ReactNode }
 
       console.log('Video metadata saved to database:', data);
 
+      // Award XP for creating a video
+      try {
+        await supabase.functions.invoke('award-xp', {
+          body: {
+            userId: user.id,
+            actionType: 'video_create',
+            referenceId: data.id
+          }
+        });
+        console.log('XP awarded for video creation');
+      } catch (xpError) {
+        console.error('Error awarding XP for video creation:', xpError);
+      }
+
+      // Award XP for making video public (if applicable)
+      if (videoData.isPublic) {
+        try {
+          await supabase.functions.invoke('award-xp', {
+            body: {
+              userId: user.id,
+              actionType: 'video_public',
+              referenceId: data.id
+            }
+          });
+          console.log('XP awarded for making video public');
+        } catch (xpError) {
+          console.error('Error awarding XP for public video:', xpError);
+        }
+      }
+
       // Reload videos to update the list and count
       await loadVideos();
     } catch (error) {
@@ -202,6 +232,23 @@ export function VideoLibraryProvider({ children }: { children: React.ReactNode }
         .eq('user_id', user.id);
 
       if (error) throw error;
+
+      // Award XP if video was made public for the first time
+      const originalVideo = videos.find(v => v.id === id);
+      if (updates.isPublic && !originalVideo?.isPublic) {
+        try {
+          await supabase.functions.invoke('award-xp', {
+            body: {
+              userId: user.id,
+              actionType: 'video_public',
+              referenceId: id
+            }
+          });
+          console.log('XP awarded for making video public');
+        } catch (xpError) {
+          console.error('Error awarding XP for making video public:', xpError);
+        }
+      }
 
       // Update local state
       setVideos(videos.map(video => 
