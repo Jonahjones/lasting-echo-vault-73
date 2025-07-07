@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
-import { Shield, Eye, EyeOff, Video, User, Calendar, Search, LogOut, Lock } from "lucide-react";
+import { Shield, Eye, EyeOff, Video, User, Calendar, Search, LogOut, Lock, Mail } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { VideoPreview } from "@/components/admin/VideoPreview";
@@ -29,6 +29,9 @@ interface AdminVideo {
 export default function Admin() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [password, setPassword] = useState("");
+  const [email, setEmail] = useState("");
+  const [loginPassword, setLoginPassword] = useState("");
+  const [showLoginForm, setShowLoginForm] = useState(false);
   const [videos, setVideos] = useState<AdminVideo[]>([]);
   const [filteredVideos, setFilteredVideos] = useState<AdminVideo[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
@@ -85,6 +88,42 @@ export default function Admin() {
     );
     setFilteredVideos(filtered);
   }, [videos, searchTerm]);
+
+  const handleLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
+        email,
+        password: loginPassword
+      });
+
+      if (authError) {
+        toast({
+          title: "Login Failed",
+          description: authError.message,
+          variant: "destructive"
+        });
+        return;
+      }
+
+      console.log('✅ User logged in:', authData.user?.id);
+      setShowLoginForm(false);
+      setEmail("");
+      setLoginPassword("");
+      
+      toast({
+        title: "Login Successful",
+        description: "You can now enter the admin password to access the panel.",
+      });
+    } catch (error) {
+      console.error('❌ Login failed:', error);
+      toast({
+        title: "Login Error",
+        description: "Something went wrong. Please try again.",
+        variant: "destructive"
+      });
+    }
+  };
 
   const handlePasswordSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -307,28 +346,82 @@ export default function Admin() {
             <div>
               <CardTitle className="text-2xl font-serif">Admin Access</CardTitle>
               <CardDescription>
-                Log into your account first, then enter the admin password to get access.
+                {!user && !showLoginForm && "Login to your account or enter admin password directly"}
+                {!user && showLoginForm && "Enter your account credentials to login"}
+                {user && "Enter the admin password to access the panel"}
               </CardDescription>
             </div>
           </CardHeader>
           <CardContent>
-            <form onSubmit={handlePasswordSubmit} className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="password">Password</Label>
-                <Input
-                  id="password"
-                  type="password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  placeholder="Enter admin password"
-                  className="text-center"
-                />
-              </div>
-              <Button type="submit" className="w-full">
-                <Lock className="w-4 h-4 mr-2" />
-                Access Admin Panel
-              </Button>
-            </form>
+            {!user && showLoginForm ? (
+              /* Login Form */
+              <form onSubmit={handleLogin} className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="email">Email</Label>
+                  <Input
+                    id="email"
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder="Enter your email"
+                    required
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="loginPassword">Password</Label>
+                  <Input
+                    id="loginPassword"
+                    type="password"
+                    value={loginPassword}
+                    onChange={(e) => setLoginPassword(e.target.value)}
+                    placeholder="Enter your password"
+                    required
+                  />
+                </div>
+                <Button type="submit" className="w-full">
+                  <Mail className="w-4 h-4 mr-2" />
+                  Login to Account
+                </Button>
+                <Button 
+                  type="button" 
+                  variant="outline" 
+                  onClick={() => setShowLoginForm(false)}
+                  className="w-full"
+                >
+                  Use Admin Password Instead
+                </Button>
+              </form>
+            ) : (
+              /* Admin Password Form */
+              <form onSubmit={handlePasswordSubmit} className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="password">Admin Password</Label>
+                  <Input
+                    id="password"
+                    type="password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    placeholder="Enter admin password"
+                    className="text-center"
+                  />
+                </div>
+                <Button type="submit" className="w-full" disabled={!user}>
+                  <Lock className="w-4 h-4 mr-2" />
+                  Access Admin Panel
+                </Button>
+                {!user && (
+                  <Button 
+                    type="button" 
+                    variant="outline" 
+                    onClick={() => setShowLoginForm(true)}
+                    className="w-full"
+                  >
+                    <Mail className="w-4 h-4 mr-2" />
+                    Login to Account First
+                  </Button>
+                )}
+              </form>
+            )}
           </CardContent>
         </Card>
       </div>
