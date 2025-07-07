@@ -89,61 +89,78 @@ export default function Admin() {
   const handlePasswordSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (password === ADMIN_PASSWORD) {
-      // Check if user is logged into Supabase
-      if (!user) {
-        toast({
-          title: "Authentication Required",
-          description: "Please log into your Supabase account first, then access the admin panel.",
-          variant: "destructive"
-        });
-        return;
-      }
-
       try {
-        console.log('🔧 Adding user to admin_users table:', user.id);
-        const { data: adminData, error: adminError } = await supabase
-          .from('admin_users')
-          .upsert({ 
-            user_id: user.id, 
-            role: 'moderator' 
-          }, { 
-            onConflict: 'user_id' 
-          })
-          .select();
-        
-        if (adminError) {
-          console.error('❌ Failed to add to admin_users:', adminError);
-          toast({
-            title: "Admin Setup Error",
-            description: "Could not register admin permissions. Please try again.",
-            variant: "destructive"
+        // If not logged in, sign in with dedicated admin account
+        if (!user) {
+          console.log('🔐 Signing in admin user...');
+          const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
+            email: 'admin@lovable-admin.com',
+            password: 'AdminAccess2024!'
           });
-          return;
-        } else {
-          console.log('✅ User successfully added to admin_users table:', adminData);
+
+          if (authError) {
+            console.error('❌ Admin signin failed:', authError);
+            toast({
+              title: "Admin Authentication Failed",
+              description: "Could not authenticate admin user. Please try again.",
+              variant: "destructive"
+            });
+            return;
+          }
+
+          console.log('✅ Admin user signed in:', authData.user?.id);
+          
+          // Add a small delay to ensure auth state is updated
+          await new Promise(resolve => setTimeout(resolve, 500));
         }
-      } catch (error) {
-        console.error('❌ Admin table update failed:', error);
+
+        // Ensure admin user is in admin_users table
+        const currentUserId = user?.id || (await supabase.auth.getUser()).data.user?.id;
+        if (currentUserId) {
+          console.log('🔧 Adding user to admin_users table:', currentUserId);
+          const { data: adminData, error: adminError } = await supabase
+            .from('admin_users')
+            .upsert({ 
+              user_id: currentUserId, 
+              role: 'moderator' 
+            }, { 
+              onConflict: 'user_id' 
+            })
+            .select();
+          
+          if (adminError) {
+            console.error('❌ Failed to add to admin_users:', adminError);
+            toast({
+              title: "Admin Setup Error",
+              description: "Could not register admin permissions. Please try again.",
+              variant: "destructive"
+            });
+            return;
+          } else {
+            console.log('✅ User successfully added to admin_users table:', adminData);
+          }
+        }
+        
+        setIsAuthenticated(true);
+        setLastActivity(Date.now());
+        
+        loadVideos();
+        
+        // Log admin access
+        logAdminAction("LOGIN", { timestamp: new Date().toISOString() });
+        
         toast({
-          title: "Admin Setup Error", 
-          description: "Database error. Please try again.",
+          title: "Admin Access Granted",
+          description: "Welcome to the admin panel",
+        });
+      } catch (error) {
+        console.error('❌ Admin authentication failed:', error);
+        toast({
+          title: "Admin Access Error", 
+          description: "Authentication failed. Please try again.",
           variant: "destructive"
         });
-        return;
       }
-      
-      setIsAuthenticated(true);
-      setLastActivity(Date.now());
-      
-      loadVideos();
-      
-      // Log admin access
-      logAdminAction("LOGIN", { timestamp: new Date().toISOString() });
-      
-      toast({
-        title: "Admin Access Granted",
-        description: "Welcome to the admin panel",
-      });
     } else {
       toast({
         title: "Access Denied",
