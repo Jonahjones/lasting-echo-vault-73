@@ -149,16 +149,26 @@ export default function Admin() {
       
       // If this is the admin email, add them to admin_users table
       if (email === 'jonah3272@gmail.com' && authData.user) {
-        const { error: adminError } = await supabase
-          .from('admin_users')
-          .upsert({ 
-            user_id: authData.user.id, 
-            role: 'super_admin' 
-          }, { 
-            onConflict: 'user_id' 
-          });
-        
-        if (!adminError) {
+        try {
+          const { error: adminError } = await supabase
+            .from('admin_users')
+            .upsert({ 
+              user_id: authData.user.id, 
+              role: 'super_admin' 
+            }, { 
+              onConflict: 'user_id' 
+            });
+          
+          if (adminError) {
+            console.error('❌ Admin registration error:', adminError);
+            toast({
+              title: "Admin Setup Error",
+              description: "Could not register admin permissions. Please try again.",
+              variant: "destructive"
+            });
+            return;
+          }
+
           console.log('✅ User added to admin_users table');
           setIsAuthenticated(true);
           loadVideos();
@@ -171,6 +181,14 @@ export default function Admin() {
           setShowLoginForm(false);
           setEmail("");
           setLoginPassword("");
+          return;
+        } catch (error) {
+          console.error('❌ Exception during admin setup:', error);
+          toast({
+            title: "Admin Setup Error", 
+            description: "Could not register admin permissions. Please try again.",
+            variant: "destructive"
+          });
           return;
         }
       }
