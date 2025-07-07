@@ -129,38 +129,33 @@ export default function Admin() {
     e.preventDefault();
     if (password === ADMIN_PASSWORD) {
       try {
-        // Check if user is logged in
-        if (!user) {
-          toast({
-            title: "Login Required",
-            description: "Please log into your account first, then return to access admin panel.",
-            variant: "destructive"
-          });
-          return;
-        }
-
-        // Add current user to admin_users table with correct passcode
-        console.log('🔧 Adding current user as admin:', user.id);
-        const { data: adminData, error: adminError } = await supabase
-          .from('admin_users')
-          .upsert({ 
-            user_id: user.id, 
-            role: 'super_admin' 
-          }, { 
-            onConflict: 'user_id' 
-          })
-          .select();
-        
-        if (adminError) {
-          console.error('❌ Failed to add to admin_users:', adminError);
-          toast({
-            title: "Admin Setup Error",
-            description: "Could not register admin permissions. Please try again.",
-            variant: "destructive"
-          });
-          return;
+        // If user is logged in, add them to admin_users table
+        if (user) {
+          console.log('🔧 Adding current user as admin:', user.id);
+          const { data: adminData, error: adminError } = await supabase
+            .from('admin_users')
+            .upsert({ 
+              user_id: user.id, 
+              role: 'super_admin' 
+            }, { 
+              onConflict: 'user_id' 
+            })
+            .select();
+          
+          if (adminError) {
+            console.error('❌ Failed to add to admin_users:', adminError);
+            toast({
+              title: "Admin Setup Error",
+              description: "Could not register admin permissions. Please try again.",
+              variant: "destructive"
+            });
+            return;
+          } else {
+            console.log('✅ User successfully added to admin_users table:', adminData);
+          }
         } else {
-          console.log('✅ User successfully added to admin_users table:', adminData);
+          // Guest access - just proceed without user registration
+          console.log('🔐 Guest admin access granted');
         }
         
         setIsAuthenticated(true);
@@ -169,7 +164,10 @@ export default function Admin() {
         loadVideos();
         
         // Log admin access
-        logAdminAction("LOGIN", { timestamp: new Date().toISOString() });
+        logAdminAction("LOGIN", { 
+          timestamp: new Date().toISOString(),
+          mode: user ? 'authenticated_user' : 'guest_access'  
+        });
         
         toast({
           title: "Admin Access Granted",
@@ -405,7 +403,7 @@ export default function Admin() {
                     className="text-center"
                   />
                 </div>
-                <Button type="submit" className="w-full" disabled={!user}>
+                <Button type="submit" className="w-full">
                   <Lock className="w-4 h-4 mr-2" />
                   Access Admin Panel
                 </Button>
