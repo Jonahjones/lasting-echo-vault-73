@@ -129,33 +129,38 @@ export default function Admin() {
     e.preventDefault();
     if (password === ADMIN_PASSWORD) {
       try {
-        // If user is logged in, add them to admin_users table
-        if (user) {
-          console.log('🔧 Adding current user as admin:', user.id);
-          const { data: adminData, error: adminError } = await supabase
-            .from('admin_users')
-            .upsert({ 
-              user_id: user.id, 
-              role: 'super_admin' 
-            }, { 
-              onConflict: 'user_id' 
-            })
-            .select();
-          
-          if (adminError) {
-            console.error('❌ Failed to add to admin_users:', adminError);
-            toast({
-              title: "Admin Setup Error",
-              description: "Could not register admin permissions. Please try again.",
-              variant: "destructive"
-            });
-            return;
-          } else {
-            console.log('✅ User successfully added to admin_users table:', adminData);
-          }
+        // Admin password requires user to be logged in for security
+        if (!user) {
+          toast({
+            title: "Login Required",
+            description: "You must be logged into your account to access admin functions.",
+            variant: "destructive"
+          });
+          return;
+        }
+
+        // Add current user to admin_users table
+        console.log('🔧 Adding current user as admin:', user.id);
+        const { data: adminData, error: adminError } = await supabase
+          .from('admin_users')
+          .upsert({ 
+            user_id: user.id, 
+            role: 'super_admin' 
+          }, { 
+            onConflict: 'user_id' 
+          })
+          .select();
+        
+        if (adminError) {
+          console.error('❌ Failed to add to admin_users:', adminError);
+          toast({
+            title: "Admin Setup Error",
+            description: "Could not register admin permissions. Please try again.",
+            variant: "destructive"
+          });
+          return;
         } else {
-          // Guest access - just proceed without user registration
-          console.log('🔐 Guest admin access granted');
+          console.log('✅ User successfully added to admin_users table:', adminData);
         }
         
         setIsAuthenticated(true);
@@ -166,7 +171,7 @@ export default function Admin() {
         // Log admin access
         logAdminAction("LOGIN", { 
           timestamp: new Date().toISOString(),
-          mode: user ? 'authenticated_user' : 'guest_access'  
+          user_id: user.id
         });
         
         toast({
