@@ -7,6 +7,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { VideoLibraryProvider } from "@/contexts/VideoLibraryContext";
 import { NotificationsProvider } from "@/contexts/NotificationsContext";
+import { RealtimeProvider } from "@/contexts/RealtimeContext";
 import { BottomNavigation } from "@/components/BottomNavigation";
 import { MobileHeader } from "@/components/MobileHeader";
 import { ProfileSetup } from "@/components/ProfileSetup";
@@ -155,22 +156,24 @@ const queryClient = new QueryClient();
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <AuthProvider>
-      <VideoLibraryProvider>
-        <NotificationsProvider>
-          <TooltipProvider>
-            <Toaster />
-            <Sonner />
-            <BrowserRouter>
-              <div className="min-h-screen bg-background">
-                <Routes>
-                  <Route path="/admin" element={<Admin />} />
-                  <Route path="*" element={<AppRoutes />} />
-                </Routes>
-              </div>
-            </BrowserRouter>
-          </TooltipProvider>
-        </NotificationsProvider>
-      </VideoLibraryProvider>
+      <RealtimeProvider>
+        <VideoLibraryProvider>
+          <NotificationsProvider>
+            <TooltipProvider>
+              <Toaster />
+              <Sonner />
+              <BrowserRouter>
+                <div className="min-h-screen bg-background">
+                  <Routes>
+                    <Route path="/admin" element={<Admin />} />
+                    <Route path="*" element={<AppRoutes />} />
+                  </Routes>
+                </div>
+              </BrowserRouter>
+            </TooltipProvider>
+          </NotificationsProvider>
+        </VideoLibraryProvider>
+      </RealtimeProvider>
     </AuthProvider>
   </QueryClientProvider>
 );

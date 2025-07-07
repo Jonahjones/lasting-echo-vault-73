@@ -11,6 +11,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { VideoPreview } from "@/components/admin/VideoPreview";
 import { useAuth } from "@/contexts/AuthContext";
+import { useRealtime } from "@/contexts/RealtimeContext";
 
 interface AdminVideo {
   id: string;
@@ -39,6 +40,7 @@ export default function Admin() {
   const [lastActivity, setLastActivity] = useState(Date.now());
   const { toast } = useToast();
   const { user } = useAuth();
+  const { videos: realtimeVideos, isConnected, optimisticToggleFeatured } = useRealtime();
 
   const ADMIN_PASSWORD = "Admin3272!";
   const SESSION_TIMEOUT = 15 * 60 * 1000; // 15 minutes
@@ -75,21 +77,28 @@ export default function Admin() {
     };
   }, [isAuthenticated, lastActivity]);
 
-  // Filter videos based on search term
+  // Use real-time videos from context instead of local state
+  useEffect(() => {
+    if (isAuthenticated) {
+      setVideos(realtimeVideos);
+    }
+  }, [realtimeVideos, isAuthenticated]);
+
+  // Filter real-time videos based on search term
   useEffect(() => {
     if (!searchTerm) {
-      setFilteredVideos(videos);
+      setFilteredVideos(realtimeVideos);
       return;
     }
 
-    const filtered = videos.filter(video =>
+    const filtered = realtimeVideos.filter(video =>
       video.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
       video.description?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       video.user_email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       video.user_name?.toLowerCase().includes(searchTerm.toLowerCase())
     );
     setFilteredVideos(filtered);
-  }, [videos, searchTerm]);
+  }, [realtimeVideos, searchTerm]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -309,12 +318,13 @@ export default function Admin() {
   };
 
   const toggleFeatured = async (videoId: string, currentlyFeatured: boolean) => {
+    // Optimistic update first
+    optimisticToggleFeatured(videoId);
+    
     const newFeaturedState = !currentlyFeatured;
     console.log(`🔄 Admin toggling video ${videoId}: ${currentlyFeatured} → ${newFeaturedState}`);
     
     try {
-      // Use admin edge function to bypass RLS restrictions
-      console.log('📤 Calling admin toggle function...');
       const response = await fetch(`https://fradbhfppmwjcouodahf.supabase.co/functions/v1/admin-toggle-featured`, {
         method: 'POST',
         headers: {
@@ -324,7 +334,7 @@ export default function Admin() {
         body: JSON.stringify({
           videoId,
           is_featured: newFeaturedState,
-          admin_password: 'Admin3272!' // Verify admin access
+          admin_password: 'Admin3272!'
         })
       });
       
@@ -332,16 +342,6 @@ export default function Admin() {
         const errorData = await response.json();
         throw new Error(errorData.error || 'Admin operation failed');
       }
-      
-      const result = await response.json();
-      console.log('✅ Admin toggle successful:', result);
-
-      // Update local state immediately
-      setVideos(prev => prev.map(video => 
-        video.id === videoId 
-          ? { ...video, is_featured: newFeaturedState, is_public: true }
-          : video
-      ));
 
       toast({
         title: newFeaturedState ? "Video Featured!" : "Video Unfeatured",
@@ -352,6 +352,9 @@ export default function Admin() {
 
     } catch (error) {
       console.error('❌ Admin toggle failed:', error);
+      // Rollback optimistic update on error
+      optimisticToggleFeatured(videoId);
+      
       toast({
         title: "Update Failed",
         description: `Failed to ${newFeaturedState ? 'feature' : 'unfeature'} video: ${error instanceof Error ? error.message : 'Unknown error'}`,
