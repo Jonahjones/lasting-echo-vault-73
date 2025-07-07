@@ -43,6 +43,8 @@ export default function Admin() {
   const ADMIN_PASSWORD = "Admin3272!";
   const SESSION_TIMEOUT = 15 * 60 * 1000; // 15 minutes
 
+  console.log('🔍 Debug: ADMIN_PASSWORD is set to:', ADMIN_PASSWORD);
+
   // Auto-logout after inactivity
   useEffect(() => {
     if (!isAuthenticated) return;
@@ -518,15 +520,31 @@ export default function Admin() {
                   Access Admin Panel
                 </Button>
                 {!user && (
-                  <Button 
-                    type="button" 
-                    variant="outline" 
-                    onClick={() => setShowLoginForm(true)}
-                    className="w-full"
-                  >
-                    <Mail className="w-4 h-4 mr-2" />
-                    Login to Account First
-                  </Button>
+                  <>
+                    <Button 
+                      type="button" 
+                      variant="outline" 
+                      onClick={() => setShowLoginForm(true)}
+                      className="w-full"
+                    >
+                      <Mail className="w-4 h-4 mr-2" />
+                      Login to Account First
+                    </Button>
+                    <Button 
+                      type="button" 
+                      variant="ghost" 
+                      onClick={() => {
+                        setPassword("");
+                        setEmail("");
+                        setLoginPassword("");
+                        setShowLoginForm(false);
+                        console.log('🔄 Reset form state');
+                      }}
+                      className="w-full text-xs"
+                    >
+                      Reset Form
+                    </Button>
+                  </>
                 )}
               </form>
             )}
