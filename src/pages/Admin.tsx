@@ -184,6 +184,12 @@ export default function Admin() {
 
   const handlePasswordSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    console.log('🔍 Debug: Entered password:', password);
+    console.log('🔍 Debug: Expected password:', ADMIN_PASSWORD);
+    console.log('🔍 Debug: Passwords match:', password === ADMIN_PASSWORD);
+    console.log('🔍 Debug: Password length:', password.length, 'Expected length:', ADMIN_PASSWORD.length);
+    
     if (password === ADMIN_PASSWORD) {
       try {
         // If user is not logged in, sign in or create the dedicated admin account
