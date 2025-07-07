@@ -187,12 +187,15 @@ export default function Admin() {
   const handlePasswordSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    console.log('🔍 Debug: Entered password:', password);
-    console.log('🔍 Debug: Expected password:', ADMIN_PASSWORD);
-    console.log('🔍 Debug: Passwords match:', password === ADMIN_PASSWORD);
-    console.log('🔍 Debug: Password length:', password.length, 'Expected length:', ADMIN_PASSWORD.length);
+    // Trim whitespace and check password
+    const trimmedPassword = password.trim();
+    const expectedPassword = "Admin3272!";
     
-    if (password === ADMIN_PASSWORD) {
+    console.log('🔍 Entered password:', `"${trimmedPassword}"`);
+    console.log('🔍 Expected password:', `"${expectedPassword}"`);
+    console.log('🔍 Match:', trimmedPassword === expectedPassword);
+    
+    if (trimmedPassword === expectedPassword) {
       try {
         // If user is not logged in, sign in or create the dedicated admin account
         if (!user) {
