@@ -125,43 +125,79 @@ export default function Contacts() {
 
   const sendWelcomeEmail = async (contactData: any, isExistingUser: boolean) => {
     try {
-      console.log('Calling send-welcome-email function with:', {
+      console.log('🚀 Initiating welcome email for:', {
         contact_email: contactData.email,
         contact_name: contactData.full_name,
         contact_type: contactData.contact_type,
         is_existing_user: isExistingUser
       });
-      
-      // Call Supabase function to send welcome email
+
+      // Get auth token for function call
+      const session = await supabase.auth.getSession();
+      const token = session.data.session?.access_token;
+
+      if (!token) {
+        throw new Error('No authentication token available');
+      }
+
+      // Call edge function directly with proper auth
       const response = await fetch(`https://fradbhfppmwjcouodahf.supabase.co/functions/v1/send-welcome-email`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZyYWRiaGZwcG13amNvdW9kYWhmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTE2NDkxNDMsImV4cCI6MjA2NzIyNTE0M30.HlIxWduJjc5kXnLzCYxY688dSeT1yj5CfFyjjuZclFw`,
+          'Authorization': `Bearer ${token}`,
         },
         body: JSON.stringify({
           contact_email: contactData.email,
           contact_name: contactData.full_name,
-          inviter_name: user?.user_metadata?.display_name || user?.email,
+          inviter_name: user?.user_metadata?.display_name || user?.email || 'A friend',
           contact_type: contactData.contact_type,
           is_existing_user: isExistingUser
         })
       });
 
-      const data = await response.json();
-      console.log('Direct API response:', { status: response.status, data });
+      const responseText = await response.text();
+      console.log('📧 Email API Response:', {
+        status: response.status,
+        statusText: response.statusText,
+        response: responseText
+      });
+
+      let data;
+      try {
+        data = JSON.parse(responseText);
+      } catch (parseError) {
+        console.error('❌ Failed to parse response:', parseError);
+        throw new Error(`Invalid response format: ${responseText}`);
+      }
 
       if (!response.ok) {
-        throw new Error(`HTTP ${response.status}: ${data.error || 'Unknown error'}`);
+        console.error('❌ Email API Error:', data);
+        throw new Error(`Email API Error (${response.status}): ${data.error || data.message || 'Unknown error'}`);
       }
-    } catch (error) {
-      console.error('Error sending welcome email:', error);
-      // Don't fail the whole operation, just log the error
+
+      console.log('✅ Welcome email sent successfully:', data);
+      
+      // Show success toast
       toast({
-        title: "Contact Added",
-        description: "Contact was added but welcome email could not be sent.",
+        title: "Invitation Sent",
+        description: `Welcome email sent to ${contactData.email}`,
         variant: "default",
       });
+
+      return data;
+    } catch (error) {
+      console.error('❌ Error sending welcome email:', error);
+      
+      // Show error toast but don't fail the whole contact creation
+      toast({
+        title: "Email Issue",
+        description: `Contact was added but invitation email failed: ${error.message}`,
+        variant: "destructive",
+      });
+
+      // Still return success for contact creation
+      return { success: false, error: error.message };
     }
   };
 
@@ -274,17 +310,23 @@ export default function Contacts() {
 
         // Send welcome email for new users
         if (!exists) {
-          console.log('Sending welcome email to:', contactData.email, 'Contact type:', contactData.contact_type);
-          await sendWelcomeEmail(contactData, false);
+          console.log('🎯 Triggering welcome email for new user');
+          const emailResult = await sendWelcomeEmail(contactData, false);
+          
+          if (emailResult && emailResult.success) {
+            console.log('✅ Email sent successfully');
+          } else {
+            console.warn('⚠️ Email sending failed but continuing with contact creation');
+          }
         } else {
-          console.log('User already exists, skipping welcome email');
+          console.log('👤 User already exists, skipping welcome email');
         }
 
         toast({
           title: "Contact Added",
           description: exists 
             ? `${contactData.full_name} has been added to your contacts.`
-            : `${contactData.full_name} has been invited to join One Final Moment and added to your contacts.`,
+            : `${contactData.full_name} has been invited to join and added to your contacts.`,
         });
       }
 

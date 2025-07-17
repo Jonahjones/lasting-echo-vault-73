@@ -1,49 +1,54 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import { Resend } from "npm:resend@2.0.0"
 
+console.log('🔧 Initializing send-welcome-email function');
+
+const resendApiKey = Deno.env.get("RESEND_API_KEY");
+console.log('🔑 RESEND_API_KEY configured:', resendApiKey ? 'YES' : 'NO');
+
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
 serve(async (req) => {
-  console.log('Function called with method:', req.method)
+  console.log('📨 Function called with method:', req.method);
+  console.log('📨 Request headers:', Object.fromEntries(req.headers.entries()));
   
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
-    return new Response('ok', { headers: corsHeaders })
+    console.log('✅ Handling CORS preflight request');
+    return new Response('ok', { headers: corsHeaders });
   }
 
   try {
-    const body = await req.json()
-    console.log('Request body:', body)
+    const body = await req.json();
+    console.log('📥 Request body received:', body);
     
-    const { contact_email, contact_name, inviter_name, contact_type, is_existing_user } = body
+    const { contact_email, contact_name, inviter_name, contact_type, is_existing_user } = body;
 
     // Validate required fields
     if (!contact_email || !contact_name || !inviter_name || !contact_type) {
-      console.log('Missing required fields')
+      console.log('❌ Missing required fields:', { contact_email, contact_name, inviter_name, contact_type });
       return new Response(
         JSON.stringify({ error: 'Missing required fields' }),
         {
           status: 400,
           headers: { ...corsHeaders, 'Content-Type': 'application/json' }
         }
-      )
+      );
     }
 
-    console.log('Initializing Resend...')
-    const resend = new Resend(Deno.env.get("RESEND_API_KEY"))
-    
-    if (!Deno.env.get("RESEND_API_KEY")) {
-      console.log('RESEND_API_KEY not found')
+    // Check if Resend API key is available
+    if (!resendApiKey) {
+      console.log('❌ RESEND_API_KEY not configured');
       return new Response(
         JSON.stringify({ error: 'RESEND_API_KEY not configured' }),
         {
           status: 500,
           headers: { ...corsHeaders, 'Content-Type': 'application/json' }
         }
-      )
+      );
     }
 
     // Prepare email content based on contact type
@@ -70,8 +75,12 @@ serve(async (req) => {
       `
     }
 
-    console.log('Sending email to:', contact_email)
-    console.log('Subject:', subject)
+    console.log('📧 Sending email to:', contact_email);
+    console.log('📧 Subject:', subject);
+    console.log('📧 Contact type:', contact_type);
+
+    // Initialize Resend with API key
+    const resend = new Resend(resendApiKey);
 
     // Send email using Resend
     const emailResponse = await resend.emails.send({
@@ -79,9 +88,9 @@ serve(async (req) => {
       to: [contact_email],
       subject: subject,
       html: htmlContent,
-    })
+    });
 
-    console.log('Email sent successfully:', emailResponse)
+    console.log('✅ Email sent successfully:', emailResponse);
     
     return new Response(
       JSON.stringify({ 
@@ -89,25 +98,29 @@ serve(async (req) => {
         message: 'Welcome email sent successfully',
         contact_type,
         is_existing_user,
-        email_id: emailResponse.data?.id
+        email_id: emailResponse.data?.id,
+        resend_response: emailResponse
       }),
       {
         status: 200,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       }
-    )
+    );
 
   } catch (error) {
-    console.error('Error in function:', error)
+    console.error('❌ Error in function:', error);
+    console.error('❌ Error stack:', error.stack);
+    
     return new Response(
       JSON.stringify({ 
         error: 'Failed to send welcome email',
-        details: error.message 
+        details: error.message,
+        stack: error.stack
       }),
       {
         status: 500,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       }
-    )
+    );
   }
 })
