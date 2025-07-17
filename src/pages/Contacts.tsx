@@ -125,8 +125,15 @@ export default function Contacts() {
 
   const sendWelcomeEmail = async (contactData: any, isExistingUser: boolean) => {
     try {
+      console.log('Calling send-welcome-email function with:', {
+        contact_email: contactData.email,
+        contact_name: contactData.full_name,
+        contact_type: contactData.contact_type,
+        is_existing_user: isExistingUser
+      });
+      
       // Call Supabase function to send welcome email
-      const { error } = await supabase.functions.invoke('send-welcome-email', {
+      const { data, error } = await supabase.functions.invoke('send-welcome-email', {
         body: {
           contact_email: contactData.email,
           contact_name: contactData.full_name,
@@ -135,6 +142,8 @@ export default function Contacts() {
           is_existing_user: isExistingUser
         }
       });
+
+      console.log('Email function response:', { data, error });
 
       if (error) throw error;
     } catch (error) {
@@ -257,7 +266,10 @@ export default function Contacts() {
 
         // Send welcome email for new users
         if (!exists) {
+          console.log('Sending welcome email to:', contactData.email, 'Contact type:', contactData.contact_type);
           await sendWelcomeEmail(contactData, false);
+        } else {
+          console.log('User already exists, skipping welcome email');
         }
 
         toast({
