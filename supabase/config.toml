@@ -1,1 +1,25 @@
 project_id = "fradbhfppmwjcouodahf"
+
+[functions.send-welcome-email]
+verify_jwt = false
+
+[functions.generate-daily-prompts]
+verify_jwt = false
+
+[functions.manage-categories]
+verify_jwt = false
+
+[functions.manage-pricing]
+verify_jwt = false
+
+[functions.manage-prompts]
+verify_jwt = false
+
+[functions.award-xp]
+verify_jwt = false
+
+[functions.admin-toggle-featured]
+verify_jwt = false
+
+[functions.analytics-prompt-completions]
+verify_jwt = false
