@@ -9,15 +9,18 @@ const buttonVariants = cva(
   {
     variants: {
       variant: {
-        default: "bg-gradient-primary text-primary-foreground hover:shadow-gentle hover:scale-105",
+        default: "bg-gradient-cta text-cta-foreground hover:shadow-warm hover:scale-105 font-medium",
+        primary: "bg-primary text-primary-foreground hover:bg-primary/90 hover:shadow-gentle",
+        secondary: "bg-secondary-brand text-secondary-brand-foreground hover:bg-secondary-brand/90 hover:shadow-gentle",
+        success: "bg-success text-success-foreground hover:bg-success/90",
+        warning: "bg-warning text-warning-foreground hover:bg-warning/90",
         destructive: "bg-destructive text-destructive-foreground hover:bg-destructive/90",
-        outline: "border border-border bg-card hover:bg-muted hover:text-foreground",
-        secondary: "bg-secondary text-secondary-foreground hover:bg-secondary/80",
-        ghost: "hover:bg-muted hover:text-foreground",
+        outline: "border border-border bg-card hover:bg-surface hover:text-foreground hover:shadow-surface",
+        muted: "bg-secondary text-secondary-foreground hover:bg-secondary/80",
+        ghost: "hover:bg-surface hover:text-foreground",
         link: "text-primary underline-offset-4 hover:underline",
-        legacy: "bg-gradient-primary text-primary-foreground hover:shadow-gentle hover:scale-105 font-medium",
-        warm: "bg-gradient-accent text-accent-foreground hover:shadow-warm hover:scale-105 font-medium",
-        gentle: "bg-background border border-border text-foreground hover:bg-muted hover:shadow-card",
+        accent: "bg-accent text-accent-foreground hover:bg-accent/90",
+        surface: "bg-surface border border-border text-foreground hover:bg-muted hover:shadow-card",
       },
       size: {
         default: "h-10 px-4 py-2",

@@ -148,7 +148,11 @@ export function ProfileSetup({ onComplete }: ProfileSetupProps) {
         .from('videos')
         .getPublicUrl(data.path);
 
-      return publicUrl;
+      // Add cache busting parameter to ensure immediate display
+      const cacheBustedUrl = `${publicUrl}?t=${Date.now()}`;
+      console.log('Profile avatar uploaded successfully:', { path: data.path, publicUrl, cacheBustedUrl });
+
+      return cacheBustedUrl;
     } catch (error) {
       console.error('Error uploading avatar:', error);
       const errorMessage = error instanceof Error ? error.message : 'Failed to upload image';

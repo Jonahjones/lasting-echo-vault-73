@@ -6,12 +6,17 @@ import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
-import { Shield, Eye, EyeOff, Video, User, Calendar, Search, LogOut, Lock, Mail } from "lucide-react";
+import { Shield, Eye, EyeOff, Video, User, Calendar, Search, LogOut, Lock, Mail, Grid3x3, List, Play } from "lucide-react";
+import { LanguageSwitcher } from "@/components/admin/LanguageSwitcher";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { VideoPreview } from "@/components/admin/VideoPreview";
+import { VideoThumbnailPreview } from "@/components/admin/VideoThumbnailPreview";
+import { ConfigurationPanel } from "@/components/admin/ConfigurationPanel";
+import { CategoryManagement } from "@/components/admin/CategoryManagement";
 import { useAuth } from "@/contexts/AuthContext";
 import { useRealtime } from "@/contexts/RealtimeContext";
+import { EFFECTIVE_TIMING } from "@/config/timing";
 
 interface AdminVideo {
   id: string;
@@ -38,14 +43,28 @@ export default function Admin() {
   const [searchTerm, setSearchTerm] = useState("");
   const [loading, setLoading] = useState(false);
   const [lastActivity, setLastActivity] = useState(Date.now());
+  const [activeTab, setActiveTab] = useState<'videos' | 'configuration'>('videos');
+  
+  // View mode state with localStorage persistence
+  const [viewMode, setViewMode] = useState<'grid' | 'list'>(() => {
+    const savedView = localStorage.getItem('adminPanelViewMode');
+    return (savedView === 'grid' || savedView === 'list') ? savedView : 'list';
+  });
+  
   const { toast } = useToast();
   const { user } = useAuth();
   const { videos: realtimeVideos, isConnected, optimisticToggleFeatured } = useRealtime();
 
   const ADMIN_PASSWORD = "Admin3272!";
-  const SESSION_TIMEOUT = 15 * 60 * 1000; // 15 minutes
+  const SESSION_TIMEOUT = EFFECTIVE_TIMING.AUTH.ADMIN_SESSION_TIMEOUT_MINUTES * 60 * 1000;
 
   console.log('🔍 Debug: ADMIN_PASSWORD is set to:', ADMIN_PASSWORD);
+
+  const toggleViewMode = () => {
+    const newMode = viewMode === 'grid' ? 'list' : 'grid';
+    setViewMode(newMode);
+    localStorage.setItem('adminPanelViewMode', newMode);
+  };
 
   // Auto-logout after inactivity
   useEffect(() => {
@@ -62,7 +81,7 @@ export default function Admin() {
       }
     };
 
-    const interval = setInterval(checkTimeout, 60000); // Check every minute
+    const interval = setInterval(checkTimeout, EFFECTIVE_TIMING.REALTIME.ADMIN_CHECK_INTERVAL_MS);
     
     const resetActivity = () => setLastActivity(Date.now());
     window.addEventListener('mousedown', resetActivity);
@@ -491,35 +510,67 @@ export default function Admin() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-comfort pb-8">
+    <div className="min-h-screen bg-gradient-surface pb-8">
       {/* Admin Header */}
       <div className="bg-card border-b border-border shadow-card sticky top-0 z-40">
-        <div className="container mx-auto px-4 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-3">
-              <div className="w-10 h-10 bg-gradient-primary rounded-xl flex items-center justify-center">
+        <div className="container mx-auto px-4 sm:px-6 py-4">
+          <div className="flex items-center justify-between gap-4">
+            <div className="flex items-center space-x-3 min-w-0">
+              <div className="w-10 h-10 bg-gradient-primary rounded-xl flex items-center justify-center flex-shrink-0">
                 <Shield className="w-5 h-5 text-primary-foreground" />
               </div>
-              <div>
-                <h1 className="text-xl font-semibold text-foreground">Admin Panel</h1>
+              <div className="min-w-0">
+                <h1 className="text-xl font-semibold text-foreground truncate">Admin Panel</h1>
                 <Badge variant="destructive" className="text-xs">
                   ADMIN MODE
                 </Badge>
               </div>
             </div>
-            <Button variant="outline" onClick={handleLogout}>
-              <LogOut className="w-4 h-4 mr-2" />
-              Logout
-            </Button>
+            <div className="flex items-center space-x-2 sm:space-x-3 flex-shrink-0">
+              <LanguageSwitcher />
+              <Button variant="outline" onClick={handleLogout} className="h-9 px-3">
+                <LogOut className="w-4 h-4 mr-2" />
+                <span className="hidden sm:inline">Logout</span>
+              </Button>
+            </div>
           </div>
         </div>
       </div>
 
-      <div className="container mx-auto px-4 py-8 max-w-6xl">
+      {/* Main Content Container */}
+      <div className="container mx-auto px-4 sm:px-6 py-6 sm:py-8">
+        {/* Navigation Tabs */}
+        <div className="mb-6 sm:mb-8">
+          <div className="flex space-x-1 bg-muted p-1 rounded-lg w-fit">
+            <button
+              onClick={() => setActiveTab('videos')}
+              className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+                activeTab === 'videos' 
+                  ? 'bg-background text-foreground shadow-sm' 
+                  : 'text-muted-foreground hover:text-foreground'
+              }`}
+            >
+              Video Moderation
+            </button>
+            <button
+              onClick={() => setActiveTab('configuration')}
+              className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+                activeTab === 'configuration' 
+                  ? 'bg-background text-foreground shadow-sm' 
+                  : 'text-muted-foreground hover:text-foreground'
+              }`}
+            >
+              System Configuration
+            </button>
+          </div>
+        </div>
+
+        {activeTab === 'videos' && (
+          <>
         {/* Search and Stats */}
-        <div className="mb-8 space-y-4">
+        <div className="mb-6 sm:mb-8 space-y-4">
           <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
-            <div>
+            <div className="w-full sm:w-auto">
               <h2 className="text-2xl font-serif font-semibold text-foreground mb-2">
                 Public Video Moderation
               </h2>
@@ -527,12 +578,16 @@ export default function Admin() {
                 Manage which videos appear in the public feed
               </p>
             </div>
-            <div className="flex items-center space-x-2 text-sm text-muted-foreground">
-              <Video className="w-4 h-4" />
-              <span>{videos.length} total</span>
+            <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm text-muted-foreground">
+              <div className="flex items-center space-x-1">
+                <Video className="w-4 h-4" />
+                <span>{videos.length} total</span>
+              </div>
               <span>•</span>
-              <Eye className="w-4 h-4" />
-              <span>{videos.filter(v => v.is_featured).length} featured</span>
+              <div className="flex items-center space-x-1">
+                <Eye className="w-4 h-4" />
+                <span>{videos.filter(v => v.is_featured).length} featured</span>
+              </div>
               
               {/* Test Button */}
               <Button 
@@ -544,21 +599,44 @@ export default function Admin() {
                     await toggleFeatured(videos[0].id, videos[0].is_featured);
                   }
                 }}
-                className="ml-4"
+                className="ml-0 sm:ml-4"
               >
                 🧪 Test Toggle
               </Button>
             </div>
           </div>
 
-          <div className="relative max-w-md">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-            <Input
-              placeholder="Search videos, titles, or users..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-10"
-            />
+          <div className="flex flex-col sm:flex-row gap-4 items-stretch sm:items-center">
+            <div className="relative flex-1 max-w-full sm:max-w-md">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+              <Input
+                placeholder="Search videos, titles, or users..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-10 h-12"
+              />
+            </div>
+            
+            {/* View Mode Toggle */}
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={toggleViewMode}
+              className="w-full sm:w-auto h-12 sm:h-9 sm:px-3"
+              aria-label={`Switch to ${viewMode === 'grid' ? 'list' : 'grid'} view`}
+            >
+              {viewMode === 'grid' ? (
+                <>
+                  <List className="w-4 h-4 mr-2 sm:mr-0" />
+                  <span className="sm:hidden">List View</span>
+                </>
+              ) : (
+                <>
+                  <Grid3x3 className="w-4 h-4 mr-2 sm:mr-0" />
+                  <span className="sm:hidden">Grid View</span>
+                </>
+              )}
+            </Button>
           </div>
         </div>
 
@@ -580,29 +658,128 @@ export default function Admin() {
               </p>
             </CardContent>
           </Card>
-        ) : (
-          <div className="space-y-4">
-            {filteredVideos.map((video) => (
-              <Card key={video.id} className="shadow-gentle hover:shadow-comfort transition-all duration-200">
-                <CardContent className="p-6">
-                  <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
-                    {/* Video Info */}
-                    <div className="flex-1 space-y-3">
-                      <div className="flex items-start justify-between">
-                        <div className="flex-1 mr-4">
-                          <h3 className="font-semibold text-foreground mb-1 line-clamp-2">
-                            {video.title}
-                          </h3>
-                          {video.description && (
-                            <p className="text-sm text-muted-foreground line-clamp-2 mb-2">
-                              {video.description}
-                            </p>
-                          )}
-                        </div>
-                        <Badge variant={video.is_featured ? "default" : "secondary"}>
-                          {video.is_featured ? "Featured" : "Not Featured"}
-                        </Badge>
+        ) : viewMode === 'grid' ? (
+          /* Grid View - Compact for viewing lots of videos */
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+            {filteredVideos.map((video, index) => (
+              <Card key={video.id} className="shadow-gentle hover:shadow-comfort transition-all duration-200 group overflow-hidden">
+                <div className="relative">
+                  {/* Video Thumbnail at Top */}
+                  <VideoThumbnailPreview
+                    videoId={video.id}
+                    title={video.title}
+                    filePath={video.file_path}
+                    aspectRatio="video"
+                    showQuickPlay={true}
+                    priority={index < 6} // Prioritize first 6 videos
+                    className="rounded-none"
+                  />
+                </div>
+                <CardContent className="p-4">
+                  {/* Compact Video Info */}
+                  <div className="space-y-3">
+                    {/* Title and Featured Badge */}
+                    <div className="space-y-2">
+                      <h3 className="font-medium text-foreground text-sm line-clamp-2 leading-tight">
+                        {video.title}
+                      </h3>
+                      <Badge 
+                        variant={video.is_featured ? "default" : "secondary"}
+                        className="text-xs w-full justify-center"
+                      >
+                        {video.is_featured ? "Featured" : "Not Featured"}
+                      </Badge>
+                    </div>
+
+                    {/* Description (if available) */}
+                    {video.description && (
+                      <p className="text-xs text-muted-foreground line-clamp-2 leading-relaxed">
+                        {video.description}
+                      </p>
+                    )}
+
+                    {/* User and Date */}
+                    <div className="space-y-1 text-xs text-muted-foreground">
+                      <div className="flex items-center space-x-1">
+                        <User className="w-3 h-3" />
+                        <span className="truncate">{video.user_name}</span>
                       </div>
+                      <div className="flex items-center space-x-1">
+                        <Calendar className="w-3 h-3" />
+                        <span>{new Date(video.created_at).toLocaleDateString()}</span>
+                      </div>
+                      <div className="flex items-center space-x-1">
+                        <span>👍 {video.likes_count}</span>
+                      </div>
+                    </div>
+
+                    {/* Compact Controls */}
+                    <div className="space-y-2 pt-2 border-t border-border/20">
+                      {/* Video Preview Button */}
+                      <VideoPreview
+                        videoId={video.id}
+                        title={video.title}
+                        filePath={video.file_path}
+                        className="w-full"
+                      />
+                      
+                      {/* Feature Toggle */}
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs text-muted-foreground">
+                          {video.is_featured ? "Featured" : "Hidden"}
+                        </span>
+                        <Switch
+                          id={`featured-grid-${video.id}`}
+                          checked={video.is_featured}
+                          onCheckedChange={() => toggleFeatured(video.id, video.is_featured)}
+                          className="scale-75"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        ) : (
+          /* List View - Detailed for comprehensive review */
+          <div className="space-y-4">
+            {filteredVideos.map((video, index) => (
+              <Card key={video.id} className="shadow-gentle hover:shadow-comfort transition-all duration-200 overflow-hidden">
+                <CardContent className="p-6">
+                  <div className="flex flex-col lg:flex-row lg:items-start justify-between gap-4">
+                    {/* Thumbnail and Video Info */}
+                    <div className="flex gap-4 flex-1">
+                      {/* Video Thumbnail */}
+                      <div className="flex-shrink-0">
+                        <VideoThumbnailPreview
+                          videoId={video.id}
+                          title={video.title}
+                          filePath={video.file_path}
+                          aspectRatio="video"
+                          showQuickPlay={true}
+                          priority={index < 4} // Prioritize first 4 videos in list view
+                          className="w-32 md:w-40"
+                        />
+                      </div>
+                      
+                      {/* Video Info */}
+                      <div className="flex-1 space-y-3">
+                        <div className="flex items-start justify-between">
+                          <div className="flex-1 mr-4">
+                            <h3 className="font-semibold text-foreground mb-1 line-clamp-2">
+                              {video.title}
+                            </h3>
+                            {video.description && (
+                              <p className="text-sm text-muted-foreground line-clamp-2 mb-2">
+                                {video.description}
+                              </p>
+                            )}
+                          </div>
+                          <Badge variant={video.is_featured ? "default" : "secondary"}>
+                            {video.is_featured ? "Featured" : "Not Featured"}
+                          </Badge>
+                        </div>
 
                       <div className="flex flex-wrap items-center gap-4 text-sm text-muted-foreground">
                         <div className="flex items-center space-x-1">
@@ -617,6 +794,7 @@ export default function Admin() {
                           <span>👍 {video.likes_count}</span>
                         </div>
                       </div>
+                    </div>
                     </div>
 
                     <Separator orientation="vertical" className="hidden lg:block h-16" />
@@ -661,6 +839,12 @@ export default function Admin() {
               </Card>
             ))}
           </div>
+        )}
+          </>
+        )}
+
+        {activeTab === 'configuration' && (
+          <ConfigurationPanel />
         )}
       </div>
     </div>

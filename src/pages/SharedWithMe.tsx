@@ -102,7 +102,7 @@ export default function SharedWithMe() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-subtle flex items-center justify-center pb-20">
+      <div className="min-h-screen bg-gradient-surface flex items-center justify-center pb-20">
         <div className="text-center space-y-4">
           <div className="w-12 h-12 bg-gradient-primary rounded-2xl flex items-center justify-center mx-auto shadow-gentle animate-pulse">
             <Inbox className="w-6 h-6 text-primary-foreground" />
@@ -114,7 +114,7 @@ export default function SharedWithMe() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-subtle pb-20">
+    <div className="min-h-screen bg-gradient-surface pb-20">
       {/* Header */}
       <div className="pt-12 pb-8 px-6 max-w-4xl mx-auto">
         <div className="flex items-center justify-between mb-6">

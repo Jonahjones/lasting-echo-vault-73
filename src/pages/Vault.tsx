@@ -4,73 +4,19 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import { Shield, Crown, Star, Check, Zap, Archive, Clock, Users } from "lucide-react";
+import { usePricing } from "@/contexts/PricingContext";
 
-interface StoragePlan {
-  id: string;
-  name: string;
-  price: number;
-  isOneTime: boolean;
-  storage: string;
-  videos: number;
-  features: string[];
-  popular?: boolean;
-  icon: any;
-}
-
-const storagePlans: StoragePlan[] = [
-  {
-    id: "basic",
-    name: "Legacy Starter",
-    price: 49,
-    isOneTime: true,
-    storage: "5 GB",
-    videos: 10,
-    features: [
-      "Up to 10 video messages",
-      "5 GB secure storage",
-      "Basic delivery scheduling",
-      "2 trusted contacts",
-      "Email notifications"
-    ],
-    icon: Archive
-  },
-  {
-    id: "premium",
-    name: "Family Legacy",
-    price: 149,
-    isOneTime: true,
-    storage: "25 GB",
-    videos: 50,
-    features: [
-      "Up to 50 video messages",
-      "25 GB secure storage",
-      "Advanced scheduling options",
-      "Unlimited trusted contacts",
-      "Priority support",
-      "Legacy website generation"
-    ],
-    popular: true,
-    icon: Crown
-  },
-  {
-    id: "unlimited",
-    name: "Eternal Legacy",
-    price: 299,
-    isOneTime: true,
-    storage: "Unlimited",
-    videos: 999,
-    features: [
-      "Unlimited video messages",
-      "Unlimited secure storage",
-      "AI-assisted storytelling",
-      "Custom legacy themes",
-      "Family collaboration",
-      "Generational access",
-      "White-glove support"
-    ],
-    icon: Star
-  }
-];
+// Icon mapping for dynamic pricing plans
+const iconMap: Record<string, any> = {
+  Archive,
+  Crown,
+  Star,
+  Heart: Shield,
+  Shield,
+  Users,
+  Zap,
+  Check
+};
 
 export default function Vault() {
   const [selectedPlan, setSelectedPlan] = useState<string | null>(null);
@@ -80,6 +26,9 @@ export default function Vault() {
     maxVideos: 5,
     maxStorage: 2 // GB for free tier
   });
+
+  // Dynamic pricing
+  const { plans: storagePlans, loading: pricingLoading, error: pricingError } = usePricing();
 
   const storagePercentage = (currentUsage.storage / currentUsage.maxStorage) * 100;
   const videoPercentage = (currentUsage.videos / currentUsage.maxVideos) * 100;
@@ -197,7 +146,7 @@ export default function Vault() {
             
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               {storagePlans.map((plan) => {
-                const IconComponent = plan.icon;
+                const IconComponent = iconMap[plan.icon];
                 return (
                   <Card 
                     key={plan.id} 

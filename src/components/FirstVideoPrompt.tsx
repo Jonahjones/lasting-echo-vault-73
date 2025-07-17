@@ -65,7 +65,7 @@ export function FirstVideoPrompt() {
       await refreshProfile();
 
       // Navigate to the recording page
-      navigate('/record');
+      navigate('/record', { state: { isFirstVideo: true } });
     } catch (error) {
       console.error('Error updating profile:', error);
       toast({

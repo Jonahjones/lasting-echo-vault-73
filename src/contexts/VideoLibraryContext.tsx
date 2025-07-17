@@ -21,6 +21,8 @@ interface VideoLibraryContextType {
   videos: SavedVideo[];
   videoCount: number;
   storageLimit: number;
+  storageUsed: number; // in GB
+  storagePercentage: number;
   isAtStorageLimit: boolean;
   saveVideo: (videoData: {
     title: string;
@@ -32,22 +34,49 @@ interface VideoLibraryContextType {
     category: "wisdom" | "story" | "love" | "advice";
     scheduledDeliveryDate?: Date;
     sharedWithContacts?: string[];
+    isPromptOfTheDay?: boolean;
   }) => Promise<void>;
   updateVideo: (id: string, updates: Partial<SavedVideo>) => Promise<void>;
   deleteVideo: (id: string) => Promise<void>;
   loading: boolean;
 }
 
+// Helper function to check if a prompt matches today's daily prompt
+const isDailyPromptCompletion = async (prompt: string): Promise<boolean> => {
+  try {
+    const today = new Date().toISOString().split('T')[0];
+    const { data: dailyPrompt } = await supabase
+      .from('daily_prompts')
+      .select('prompt_text')
+      .eq('date', today)
+      .single();
+
+    return dailyPrompt && (
+      dailyPrompt.prompt_text === prompt ||
+      // Also check for partial matches as prompts may be modified slightly
+      prompt.includes(dailyPrompt.prompt_text) ||
+      dailyPrompt.prompt_text.includes(prompt)
+    );
+  } catch (error) {
+    console.error('Error checking daily prompt:', error);
+    return false;
+  }
+};
+
 const VideoLibraryContext = createContext<VideoLibraryContextType | null>(null);
 
 export function VideoLibraryProvider({ children }: { children: React.ReactNode }) {
   const [videos, setVideos] = useState<SavedVideo[]>([]);
+  const [totalStorageBytes, setTotalStorageBytes] = useState(0);
   const [loading, setLoading] = useState(true);
   const { user } = useAuth();
 
   // Storage limits - can be moved to a config later
-  const storageLimit = 3; // Free tier limit
+  const storageLimit = 3; // Free tier video count limit
+  const storageLimitGB = 2; // Free tier storage limit in GB
   const videoCount = videos.length;
+  const storageUsed = totalStorageBytes / (1024 * 1024 * 1024); // Convert bytes to GB
+  const storagePercentage = Math.min((storageUsed / storageLimitGB) * 100, 100);
   const isAtStorageLimit = videoCount >= storageLimit;
 
   // Load videos from database
@@ -66,6 +95,12 @@ export function VideoLibraryProvider({ children }: { children: React.ReactNode }
         .order('created_at', { ascending: false });
 
       if (error) throw error;
+
+      // Calculate total storage usage
+      const totalBytes = (data || []).reduce((sum, video) => {
+        return sum + (video.file_size || 0);
+      }, 0);
+      setTotalStorageBytes(totalBytes);
 
       const videosWithUrls = await Promise.all(
         (data || []).map(async (video) => {
@@ -116,6 +151,7 @@ export function VideoLibraryProvider({ children }: { children: React.ReactNode }
     category: "wisdom" | "story" | "love" | "advice";
     scheduledDeliveryDate?: Date;
     sharedWithContacts?: string[];
+    isPromptOfTheDay?: boolean;
   }) => {
     if (!user) throw new Error('User not authenticated');
 
@@ -188,6 +224,22 @@ export function VideoLibraryProvider({ children }: { children: React.ReactNode }
         console.log('XP awarded for video creation');
       } catch (xpError) {
         console.error('Error awarding XP for video creation:', xpError);
+      }
+
+      // Check if this is a daily prompt completion and award bonus XP
+      if (videoData.prompt && (videoData.isPromptOfTheDay || await isDailyPromptCompletion(videoData.prompt))) {
+        try {
+          await supabase.functions.invoke('award-xp', {
+            body: {
+              userId: user.id,
+              actionType: 'daily_prompt',
+              referenceId: data.id
+            }
+          });
+          console.log('✨ Bonus XP awarded for daily prompt completion');
+        } catch (xpError) {
+          console.error('Error awarding daily prompt bonus XP:', xpError);
+        }
       }
 
       // Award XP for making video public (if applicable)
@@ -305,6 +357,8 @@ export function VideoLibraryProvider({ children }: { children: React.ReactNode }
       videos,
       videoCount,
       storageLimit,
+      storageUsed,
+      storagePercentage,
       isAtStorageLimit,
       saveVideo,
       updateVideo,

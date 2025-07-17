@@ -28,10 +28,27 @@ export default {
 				ring: 'hsl(var(--ring))',
 				background: 'hsl(var(--background))',
 				foreground: 'hsl(var(--foreground))',
+				surface: 'hsl(var(--surface))',
 				primary: {
 					DEFAULT: 'hsl(var(--primary))',
 					foreground: 'hsl(var(--primary-foreground))',
 					glow: 'hsl(var(--primary-glow))'
+				},
+				'secondary-brand': {
+					DEFAULT: 'hsl(var(--secondary-brand))',
+					foreground: 'hsl(var(--secondary-brand-foreground))'
+				},
+				cta: {
+					DEFAULT: 'hsl(var(--cta))',
+					foreground: 'hsl(var(--cta-foreground))'
+				},
+				success: {
+					DEFAULT: 'hsl(var(--success))',
+					foreground: 'hsl(var(--success-foreground))'
+				},
+				warning: {
+					DEFAULT: 'hsl(var(--warning))',
+					foreground: 'hsl(var(--warning-foreground))'
 				},
 				secondary: {
 					DEFAULT: 'hsl(var(--secondary))',
@@ -75,15 +92,18 @@ export default {
 			},
 			backgroundImage: {
 				'gradient-primary': 'var(--gradient-primary)',
-				'gradient-accent': 'var(--gradient-accent)',
+				'gradient-secondary': 'var(--gradient-secondary)',
+				'gradient-cta': 'var(--gradient-cta)',
 				'gradient-subtle': 'var(--gradient-subtle)',
 				'gradient-comfort': 'var(--gradient-comfort)',
+				'gradient-surface': 'var(--gradient-surface)',
 			},
 			boxShadow: {
 				'gentle': 'var(--shadow-gentle)',
 				'warm': 'var(--shadow-warm)',
 				'card': 'var(--shadow-card)',
 				'comfort': 'var(--shadow-comfort)',
+				'surface': 'var(--shadow-surface)',
 			},
 			keyframes: {
 				'accordion-down': {

@@ -1,0 +1,78 @@
+{
+  "auth": {
+    "login": {
+      "title": "Continúa tu viaje",
+      "subtitle": "Bienvenido de vuelta a tu espacio sagrado de recuerdos y conexiones significativas",
+      "email": "Dirección de correo electrónico",
+      "emailPlaceholder": "Ingresa tu dirección de correo electrónico",
+      "password": "Contraseña",
+      "passwordPlaceholder": "Ingresa tu contraseña",
+      "confirmPassword": "Confirmar Contraseña",
+      "confirmPasswordPlaceholder": "Confirma tu contraseña",
+      "loginButton": "Continúa Tu Viaje",
+      "signupButton": "Comienza Tu Legado",
+      "loading": "Por favor espera...",
+      "googleLogin": "Continuar con Google",
+      "toggleToSignup": "¿Nuevo aquí? Crea tu cuenta de legado",
+      "toggleToLogin": "¿Ya preservas recuerdos? Inicia sesión"
+    },
+    "signup": {
+      "title": "Crea tu legado duradero",
+      "subtitle": "Tus palabras consolarán e inspirarán de forma segura a las futuras generaciones. Comienza a preservar tus pensamientos más preciosos hoy."
+    }
+  },
+  "admin": {
+    "access": {
+      "title": "Acceso de Administrador",
+      "adminPassword": "Contraseña de Administrador",
+      "adminPasswordPlaceholder": "Ingresa la contraseña de administrador",
+      "enterPassword": "Ingresar Contraseña",
+      "accessPanel": "Acceder al Panel"
+    },
+    "dashboard": {
+      "title": "Panel de Administración",
+      "subtitle": "Visión General del Sistema y Gestión"
+    }
+  },
+  "profile": {
+    "setup": {
+      "step1": {
+        "title": "Cuéntanos sobre ti",
+        "subtitle": "Ayúdanos a personalizar tu experiencia de diario de recuerdos con tu nombre y detalles.",
+        "firstName": "Nombre",
+        "firstNamePlaceholder": "Ingresa tu nombre",
+        "lastName": "Apellido",
+        "lastNamePlaceholder": "Ingresa tu apellido",
+        "continue": "Continuar"
+      }
+    }
+  },
+  "video": {
+    "record": {
+      "title": "Graba Tu Recuerdo",
+      "subtitle": "Comparte algo significativo",
+      "startRecording": "Comenzar Grabación",
+      "stopRecording": "Detener Grabación"
+    }
+  },
+  "navigation": {
+    "home": "Inicio",
+    "record": "Grabar",
+    "library": "Biblioteca",
+    "contacts": "Contactos",
+    "profile": "Perfil",
+    "admin": "Admin"
+  },
+  "common": {
+    "loading": "Cargando...",
+    "save": "Guardar",
+    "cancel": "Cancelar",
+    "delete": "Eliminar",
+    "edit": "Editar",
+    "close": "Cerrar",
+    "continue": "Continuar",
+    "back": "Atrás",
+    "next": "Siguiente",
+    "search": "Buscar"
+  }
+} 

@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import type { User, Session } from '@supabase/supabase-js';
+import { EFFECTIVE_TIMING } from '@/config/timing';
 
 interface Profile {
   id: string;
@@ -56,7 +57,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           .maybeSingle();
 
         const timeoutPromise = new Promise((_, reject) => 
-          setTimeout(() => reject(new Error('Profile fetch timeout')), 10000)
+          setTimeout(() => reject(new Error('Profile fetch timeout')), EFFECTIVE_TIMING.AUTH.PROFILE_FETCH_TIMEOUT_MS)
         );
 
         const { data, error } = await Promise.race([profilePromise, timeoutPromise]) as any;
@@ -70,7 +71,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
         // If no profile found, create one
         if (!data) {
-          console.log('No profile found, creating default profile');
+          console.warn('🚨 No profile found for user, creating fallback profile');
+          console.log('Profile creation details:', { 
+            userId, 
+            attemptNumber: retryCount + 1,
+            timestamp: new Date().toISOString()
+          });
           
           const createPromise = supabase
             .from('profiles')
@@ -86,7 +92,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             .single();
 
           const createTimeoutPromise = new Promise((_, reject) => 
-            setTimeout(() => reject(new Error('Profile creation timeout')), 10000)
+            setTimeout(() => reject(new Error('Profile creation timeout')), EFFECTIVE_TIMING.AUTH.PROFILE_CREATION_TIMEOUT_MS)
           );
 
           const { data: newProfile, error: createError } = await Promise.race([createPromise, createTimeoutPromise]) as any;
@@ -111,7 +117,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         }
         
         // Wait before retrying
-        await new Promise(resolve => setTimeout(resolve, 1000 * retryCount));
+        await new Promise(resolve => setTimeout(resolve, EFFECTIVE_TIMING.AUTH.RETRY_DELAY_BASE_MS * retryCount));
       }
     }
     
@@ -226,15 +232,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                   }, 0);
                 }
               }
+              
+              // Only set loading to false AFTER profile fetch is complete
+              if (isMounted) {
+                setIsLoading(false);
+              }
             }, 0);
+          } else {
+            // User didn't change, but still set loading to false
+            setIsLoading(false);
           }
         } else {
           setProfile(null);
           setHasTriggeredWelcome(false);
           currentUserId = null;
+          setIsLoading(false);
         }
-        
-        setIsLoading(false);
       }
     );
 
@@ -324,14 +337,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setSession(null);
       setProfile(null);
       
-      // Show success message and redirect
-      setTimeout(() => {
-        window.location.href = '/auth?logout=success';
-      }, 100);
+      // Set a flag for logout success message
+      localStorage.setItem('logout_success', 'true');
+      
+      // The auth state change will be handled by the onAuthStateChange listener
+      // and the app will automatically redirect to auth page
     } catch (error) {
       console.error('Error during logout:', error);
-      // Still redirect even if there's an error
-      window.location.href = '/auth';
+      // Clear local state even if signOut failed
+      setUser(null);
+      setSession(null);
+      setProfile(null);
+      
+      // Still set success flag since user is logged out locally
+      localStorage.setItem('logout_success', 'true');
     }
   };
 

@@ -52,14 +52,14 @@ export function AvatarUpload({ currentAvatarUrl, onAvatarChange, size = "lg" }: 
     setIsUploading(true);
 
     try {
-      // Create a unique filename
+      // Create a unique filename with proper path structure
       const fileExt = file.name.split('.').pop();
-      const fileName = `avatar-${user.id}-${Date.now()}.${fileExt}`;
+      const fileName = `avatars/${user.id}/avatar-${Date.now()}.${fileExt}`;
 
       // Upload to Supabase storage with timeout
       const uploadPromise = supabase.storage
         .from('videos')
-        .upload(`avatars/${fileName}`, file, {
+        .upload(fileName, file, {
           cacheControl: '3600',
           upsert: true
         });
@@ -72,22 +72,26 @@ export function AvatarUpload({ currentAvatarUrl, onAvatarChange, size = "lg" }: 
 
       if (uploadError) throw uploadError;
 
-      // Get public URL
+      // Get public URL using the path from upload response
       const { data: { publicUrl } } = supabase.storage
         .from('videos')
-        .getPublicUrl(`avatars/${fileName}`);
+        .getPublicUrl(uploadData.path);
+
+      // Add cache busting parameter to ensure immediate display
+      const cacheBustedUrl = `${publicUrl}?t=${Date.now()}`;
+      console.log('Avatar uploaded successfully:', { path: uploadData.path, publicUrl, cacheBustedUrl });
 
       // Update user profile with avatar URL
       const { error: profileError } = await supabase
         .from('profiles')
-        .update({ avatar_url: publicUrl })
+        .update({ avatar_url: cacheBustedUrl })
         .eq('user_id', user.id);
 
       if (profileError) throw profileError;
 
       // Refresh profile context to update everywhere instantly
       await refreshProfile();
-      onAvatarChange?.(publicUrl);
+      onAvatarChange?.(cacheBustedUrl);
       
       toast({
         title: "Avatar updated",

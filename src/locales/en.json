@@ -1,0 +1,415 @@
+{
+  "auth": {
+    "login": {
+      "title": "Continue your journey",
+      "subtitle": "Welcome back to your sacred space of memories and meaningful connections",
+      "email": "Email address",
+      "emailPlaceholder": "Enter your email address",
+      "password": "Password",
+      "passwordPlaceholder": "Enter your password",
+      "confirmPassword": "Confirm Password",
+      "confirmPasswordPlaceholder": "Confirm your password",
+      "loginButton": "Continue Your Journey",
+      "signupButton": "Begin Your Legacy",
+      "loading": "Please wait...",
+      "googleLogin": "Continue with Google",
+      "toggleToSignup": "New here? Create your legacy account",
+      "toggleToLogin": "Already preserving memories? Sign in"
+    },
+    "signup": {
+      "title": "Create your lasting legacy",
+      "subtitle": "Your words will safely comfort and inspire future generations. Begin preserving your most precious thoughts today."
+    },
+    "errors": {
+      "loginFailed": "Login failed. Please check your credentials.",
+      "signupFailed": "Account creation failed. Please try again.",
+      "emailRequired": "Email address is required",
+      "passwordRequired": "Password is required",
+      "passwordMismatch": "Passwords do not match"
+    }
+  },
+  "admin": {
+    "access": {
+      "title": "Admin Access",
+      "loginSubtitle": "Login to your account or enter admin password directly",
+      "credentialsSubtitle": "Enter your account credentials to login",
+      "passwordSubtitle": "Enter the admin password to access the panel",
+      "adminPassword": "Admin Password",
+      "adminPasswordPlaceholder": "Enter admin password",
+      "enterPassword": "Enter Password",
+      "loginWithAccount": "Login with Account",
+      "accessPanel": "Access Panel",
+      "logout": "Logout"
+    },
+    "dashboard": {
+      "title": "Admin Dashboard",
+      "subtitle": "System Overview & Management",
+      "videoManagement": "Video Management",
+      "userManagement": "User Management",
+      "systemConfig": "System Configuration"
+    },
+    "videos": {
+      "title": "Video Management",
+      "searchPlaceholder": "Search videos, titles, or users...",
+      "featured": "Featured",
+      "unfeatured": "Unfeatured",
+      "makePublic": "Make Public",
+      "makePrivate": "Make Private",
+      "toggleFeatured": "Toggle Featured Status",
+      "featuredSuccess": "Video Featured!",
+      "unfeaturedSuccess": "Video Unfeatured",
+      "featuredDescription": "Video will now appear in public feed",
+      "unfeaturedDescription": "Video removed from public feed",
+      "updateFailed": "Update Failed"
+    },
+    "categories": {
+      "title": "Category Management",
+      "addNew": "Add New Category",
+      "editCategory": "Edit Category",
+      "categoryName": "Category Name",
+      "categoryValue": "Category Value",
+      "description": "Description",
+      "emoji": "Emoji",
+      "color": "Color",
+      "isActive": "Active",
+      "isDefault": "Default Category",
+      "videoCount": "{{count}} videos",
+      "save": "Save Category",
+      "cancel": "Cancel",
+      "delete": "Delete",
+      "activate": "Activate",
+      "deactivate": "Deactivate",
+      "reorder": "Reorder Categories",
+      "createSuccess": "Category created successfully",
+      "updateSuccess": "Category updated successfully",
+      "deleteSuccess": "Category deleted successfully",
+      "deleteConfirm": "Are you sure you want to delete this category?",
+      "inactiveTooltip": "Inactive",
+      "defaultTooltip": "Default category"
+    },
+    "config": {
+      "title": "System Configuration",
+      "description": "Manage global application settings",
+      "tabs": {
+        "storage": "Storage",
+        "features": "Features",
+        "ui": "UI",
+        "notifications": "Notifications",
+        "gamification": "Gamification",
+        "security": "Security",
+        "uploads": "Uploads",
+        "refresh": "Refresh"
+      },
+      "updateSuccess": "Configuration Updated",
+      "updateFailed": "Update Failed",
+      "updateFailedDescription": "Failed to update configuration. Please try again."
+    },
+    "errors": {
+      "sessionExpired": "Session Expired",
+      "sessionExpiredDescription": "You have been logged out due to inactivity",
+      "accessDenied": "Access Denied",
+      "invalidPassword": "Invalid password",
+      "authFailed": "Authentication failed. Please try again."
+    }
+  },
+  "profile": {
+    "setup": {
+      "step1": {
+        "title": "Tell us about yourself",
+        "subtitle": "Help us personalize your memory journal experience with your name and details.",
+        "ssoNotice": "✓ We've pre-filled your name from your account - feel free to edit it if needed",
+        "firstName": "First Name",
+        "firstNamePlaceholder": "Enter your first name",
+        "lastName": "Last Name", 
+        "lastNamePlaceholder": "Enter your last name",
+        "continue": "Continue"
+      },
+      "step2": {
+        "title": "Add your photo",
+        "subtitle": "Help your loved ones connect with your memories by adding a personal photo.",
+        "optional": "This step is completely optional",
+        "personalMessage": "Personal Message",
+        "personalMessageLabel": "Personal Message (Optional)",
+        "personalMessagePlaceholder": "e.g., 'Always remember to choose love over fear' or 'Living life with gratitude and joy'",
+        "characterCount": "{{count}}/120 characters",
+        "uploadError": "Image upload failed: {{error}}",
+        "saveError": "Save failed: {{error}}",
+        "errorSubtext": "You can try again or continue without the photo.",
+        "complete": "Complete Setup",
+        "skip": "Skip for Now"
+      }
+    },
+    "edit": {
+      "title": "Edit Profile",
+      "firstName": "First Name",
+      "firstNamePlaceholder": "Enter your first name",
+      "lastName": "Last Name",
+      "lastNamePlaceholder": "Enter your last name", 
+      "tagline": "Personal Tagline (Optional)",
+      "taglinePlaceholder": "e.g., 'Always remember to choose love over fear'",
+      "characterCount": "{{count}}/120 characters",
+      "cancel": "Cancel",
+      "save": "Save Changes",
+      "saving": "Saving..."
+    }
+  },
+  "video": {
+    "record": {
+      "title": "Record Your Memory",
+      "subtitle": "Share something meaningful",
+      "backToHome": "Back to Home",
+      "shufflePrompt": "Shuffle Prompt",
+      "startRecording": "Start Recording",
+      "stopRecording": "Stop Recording",
+      "playback": "Play Recording",
+      "retake": "Record Again", 
+      "save": "Save Recording",
+      "promptLoaded": "✨ Prompt Loaded",
+      "promptLoadedDescription": "Ready to record your response to this inspiring prompt!",
+      "fallbackPrompt": "What's something meaningful you'd like to share?"
+    },
+    "details": {
+      "title": "Complete Your Memory",
+      "subtitle": "Add details and choose who to share with",
+      "backToRecord": "Back to Record",
+      "recording": "Your Recording",
+      "thumbnailGenerating": "Generating thumbnail...",
+      "messageDetails": "Message Details",
+      "titleLabel": "Title *",
+      "titlePlaceholder": "Give your message a meaningful title",
+      "descriptionLabel": "Description (Optional)",
+      "descriptionPlaceholder": "Add context about this message...",
+      "reviewAndSave": "Review & Save Message",
+      "storageLimitReached": "Storage Limit Reached",
+      "saveSuccess": "Video Saved Successfully!",
+      "saveSuccessDescription": "Your video has been saved to your library.",
+      "saveFailed": "Failed to save video. Please try again.",
+      "titleRequired": "Title Required",
+      "titleRequiredDescription": "Please enter a title for your video message.",
+      "storageLimitTitle": "Storage Limit Reached", 
+      "storageLimitDescription": "You've reached your storage limit. Please upgrade to save more videos."
+    },
+    "sharing": {
+      "visibility": "Video Visibility",
+      "public": "Public",
+      "private": "Private",
+      "publicDescription": "Anyone can discover and view this video",
+      "privateDescription": "Only people you choose can view this video"
+    },
+    "success": {
+      "title": "Memory Captured!",
+      "subtitle": "Your precious moment has been safely preserved",
+      "description": "Every memory you create becomes a gift of love that transcends time. Thank you for sharing your story.",
+      "continue": "Continue",
+      "tryAgain": "Try Again",
+      "close": "Close"
+    },
+    "recorder": {
+      "timeLeft": "{{seconds}}s left",
+      "preparing": "Preparing camera...",
+      "requestingPermissions": "Requesting camera access...",
+      "startRecording": "Start Recording",
+      "stopRecording": "Stop Recording", 
+      "pauseRecording": "Pause",
+      "resumeRecording": "Resume",
+      "playRecording": "Play Recording",
+      "recordAgain": "Record Again",
+      "saveRecording": "Save Recording",
+      "discardRecording": "Discard"
+    }
+  },
+  "library": {
+    "title": "My Video Library",
+    "subtitle": "Your collection of precious memories",
+    "searchPlaceholder": "Search videos...",
+    "noVideos": "No videos found",
+    "categories": {
+      "all": "All Videos",
+      "wisdom": "Wisdom",
+      "story": "Stories", 
+      "love": "Love",
+      "advice": "Advice"
+    },
+    "sort": {
+      "newest": "Newest First",
+      "oldest": "Oldest First",
+      "title": "Title A-Z"
+    },
+    "actions": {
+      "play": "Play Video",
+      "edit": "Edit Details",
+      "share": "Share Video",
+      "delete": "Delete Video"
+    }
+  },
+  "contacts": {
+    "title": "My Contacts",
+    "subtitle": "People you share memories with",
+    "addContact": "Add New Contact",
+    "trustedContacts": "Trusted Contacts",
+    "regularContacts": "Regular Contacts",
+    "roles": {
+      "parent": "Parent",
+      "child": "Child",
+      "sibling": "Sibling",
+      "spouse": "Spouse",
+      "partner": "Partner",
+      "grandparent": "Grandparent",
+      "aunt_uncle": "Aunt/Uncle",
+      "cousin": "Cousin",
+      "niece_nephew": "Niece/Nephew",
+      "friend": "Friend",
+      "colleague": "Colleague",
+      "neighbor": "Neighbor",
+      "other": "Other"
+    },
+    "form": {
+      "name": "Full Name",
+      "namePlaceholder": "Enter full name",
+      "email": "Email",
+      "emailPlaceholder": "Enter email address",
+      "phone": "Phone Number",
+      "phonePlaceholder": "Enter phone number",
+      "relationship": "Relationship",
+      "relationshipPlaceholder": "Select a relationship",
+      "role": "Role",
+      "rolePlaceholder": "Select a role",
+      "save": "Save Contact",
+      "cancel": "Cancel",
+      "update": "Update Contact"
+    },
+    "actions": {
+      "edit": "Edit Contact",
+      "delete": "Delete Contact", 
+      "promote": "Promote to Trusted",
+      "demote": "Demote to Regular",
+      "promoteTitle": "Promote to trusted contact",
+      "demoteTitle": "Demote to regular contact"
+    },
+    "messages": {
+      "contactAdded": "Contact Added",
+      "contactUpdated": "Contact Updated",
+      "contactDeleted": "Contact Deleted",
+      "contactDeletedDescription": "Contact has been removed.",
+      "contactPromoted": "Contact Promoted",
+      "contactDemoted": "Contact Demoted",
+      "saveFailed": "Failed to save contact. Please try again.",
+      "deleteFailed": "Failed to delete contact. Please try again.",
+      "promoteFailed": "Failed to promote contact. Ensure they have both email and phone number.",
+      "demoteFailed": "Failed to demote contact. Please try again.",
+      "loadFailed": "Failed to load contacts. Please try again.",
+      "welcomeEmailFailed": "Contact was added but welcome email could not be sent."
+    },
+    "validation": {
+      "nameRequired": "Name Required",
+      "nameRequiredDescription": "Please enter a full name for the contact.",
+      "emailRequired": "Email Required", 
+      "emailRequiredDescription": "Please enter an email address.",
+      "emailInvalid": "Invalid Email",
+      "emailInvalidDescription": "Please enter a valid email address.",
+      "phoneRequired": "Phone Required",
+      "phoneRequiredDescription": "Trusted contacts require both email and phone number for security.",
+      "roleRequired": "Role Required",
+      "roleRequiredDescription": "Please select a role for the trusted contact.",
+      "contactExists": "Contact Exists",
+      "contactExistsDescription": "A contact with this email address already exists."
+    }
+  },
+  "navigation": {
+    "home": "Home",
+    "record": "Record",
+    "library": "Library",
+    "contacts": "Contacts", 
+    "profile": "Profile",
+    "notifications": "Notifications",
+    "admin": "Admin",
+    "logout": "Logout"
+  },
+  "common": {
+    "loading": "Loading...",
+    "save": "Save",
+    "cancel": "Cancel",
+    "delete": "Delete",
+    "edit": "Edit",
+    "close": "Close",
+    "continue": "Continue",
+    "back": "Back",
+    "next": "Next",
+    "previous": "Previous",
+    "yes": "Yes",
+    "no": "No",
+    "optional": "Optional",
+    "required": "Required",
+    "search": "Search",
+    "filter": "Filter",
+    "sort": "Sort",
+    "upload": "Upload",
+    "download": "Download",
+    "share": "Share",
+    "copy": "Copy",
+    "copied": "Copied!",
+    "error": "Error",
+    "success": "Success",
+    "warning": "Warning",
+    "info": "Info"
+  },
+  "errors": {
+    "generic": "Something went wrong. Please try again.",
+    "network": "Network error. Please check your connection.",
+    "unauthorized": "You are not authorized to perform this action.",
+    "notFound": "The requested resource was not found.",
+    "serverError": "Server error. Please try again later."
+  },
+  "prompts": {
+    "dailyPrompt": "Today's Memory Prompt",
+    "randomPrompt": "Random Prompt",
+    "loading": "Loading prompts...",
+    "noPrompts": "No prompts available",
+    "getNew": "Get New Prompt",
+    "recordResponse": "Record Response"
+  },
+  "storage": {
+    "limitReached": "You've reached your storage limit. Upgrade to Premium for unlimited recordings.",
+    "almostFull": "You're just {{count}} video away from your limit.",
+    "almostFull_other": "You're just {{count}} videos away from your limit.", 
+    "remaining": "{{count}} videos remaining before your limit.",
+    "upgrade": "Upgrade",
+    "videosUsed": "{{used}} / {{total}} videos used"
+  },
+  "permissions": {
+    "camera": {
+      "title": "Camera Access Needed",
+      "subtitle": "We need access to your camera to record your video message",
+      "explanation": "Why do we need this?",
+      "description": "Your privacy matters to us. We only access your camera to create your personal video message. Nothing is stored or shared without your explicit permission.",
+      "grant": "Grant Camera Access",
+      "tryAgain": "Try Again",
+      "skipForNow": "I'll Record Later",
+      "troubleTitle": "Still having trouble?",
+      "troubleDescription": "Check your browser settings and make sure camera access is allowed for this site. Look for a camera icon in your address bar.",
+      "helpText": "You can always record your message later from your dashboard. Your memories are worth the wait."
+    },
+    "microphone": {
+      "title": "Microphone Access Needed", 
+      "subtitle": "We need access to your microphone to record audio with your video"
+    },
+    "both": {
+      "title": "Camera & Microphone Access Needed",
+      "subtitle": "We need access to your camera and microphone to record your video message"
+    }
+  },
+  "firstVideo": {
+    "title": "Ready to capture your first meaningful moment?",
+    "subtitle": "Take a moment to record something special. Whether it's words of wisdom, a cherished memory, gratitude, or simply \"I love you\" – your voice matters.",
+    "shareWisdom": "Share Your Wisdom",
+    "shareWisdomDescription": "Life lessons that inspire",
+    "cherishedMemory": "Cherished Memory", 
+    "cherishedMemoryDescription": "A moment that brings joy",
+    "wordsOfGratitude": "Words of Gratitude",
+    "wordsOfGratitudeDescription": "What you're thankful for today",
+    "captureFirst": "Capture Your First Memory",
+    "skipForNow": "I'll do this later",
+    "preparing": "Preparing...",
+    "encouragement": "Don't worry about being perfect. Your authentic voice and genuine emotions are what make these moments precious. You can always record more memories later."
+  }
+} 

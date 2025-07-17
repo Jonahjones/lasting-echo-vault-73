@@ -9,7 +9,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { Plus, User, Mail, Phone, Edit, Trash2, Users, Shield, Info, Download, Crown, Star, Heart, ArrowUp, ArrowDown } from "lucide-react";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { Plus, User, Mail, Phone, Edit, Trash2, Users, Shield, Info, Download, Crown, Star, Heart, ArrowUp, ArrowDown, ChevronDown, ChevronUp } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 
@@ -22,7 +23,25 @@ interface Contact {
   is_primary: boolean;
   contact_type: 'trusted' | 'regular';
   role?: 'executor' | 'legacy_messenger' | 'guardian';
+  invitation_status?: string;
 }
+
+// Common relationship options sorted alphabetically
+const RELATIONSHIP_OPTIONS = [
+  "Aunt/Uncle",
+  "Child", 
+  "Colleague",
+  "Cousin",
+  "Friend",
+  "Grandparent",
+  "Neighbor",
+  "Niece/Nephew",
+  "Other",
+  "Parent",
+  "Partner",
+  "Sibling",
+  "Spouse"
+];
 
 export default function Contacts() {
   console.log('Contacts component rendering...');
@@ -35,6 +54,19 @@ export default function Contacts() {
   const [loading, setLoading] = useState(true);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [editingContact, setEditingContact] = useState<Contact | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
+  
+  // Collapsible section state - initialized from sessionStorage
+  const [trustedSectionExpanded, setTrustedSectionExpanded] = useState(() => {
+    const saved = sessionStorage.getItem('trustedContactsExpanded');
+    return saved !== null ? JSON.parse(saved) : false; // Collapsed by default
+  });
+  
+  const [regularSectionExpanded, setRegularSectionExpanded] = useState(() => {
+    const saved = sessionStorage.getItem('regularContactsExpanded');
+    return saved !== null ? JSON.parse(saved) : false; // Collapsed by default
+  });
+  
   const [contactForm, setContactForm] = useState({
     full_name: "",
     email: "",
@@ -75,8 +107,49 @@ export default function Contacts() {
     }
   };
 
+  const validateEmail = (email: string): boolean => {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return emailRegex.test(email.trim());
+  };
+
+  const checkUserExists = async (email: string) => {
+    try {
+      // For now, we'll assume the user doesn't exist and let the backend handle the invitation
+      // In a real implementation, you could use a Supabase function to check auth.users
+      // or implement a server-side check
+      return { exists: false, user_id: null };
+    } catch (error) {
+      return { exists: false, user_id: null };
+    }
+  };
+
+  const sendWelcomeEmail = async (contactData: any, isExistingUser: boolean) => {
+    try {
+      // Call Supabase function to send welcome email
+      const { error } = await supabase.functions.invoke('send-welcome-email', {
+        body: {
+          contact_email: contactData.email,
+          contact_name: contactData.full_name,
+          inviter_name: user?.user_metadata?.display_name || user?.email,
+          contact_type: contactData.contact_type,
+          is_existing_user: isExistingUser
+        }
+      });
+
+      if (error) throw error;
+    } catch (error) {
+      console.error('Error sending welcome email:', error);
+      // Don't fail the whole operation, just log the error
+      toast({
+        title: "Contact Added",
+        description: "Contact was added but welcome email could not be sent.",
+        variant: "default",
+      });
+    }
+  };
+
   const handleSaveContact = async () => {
-    if (!contactForm.full_name) {
+    if (!contactForm.full_name.trim()) {
       toast({
         title: "Name Required",
         description: "Please enter a full name for the contact.",
@@ -85,11 +158,29 @@ export default function Contacts() {
       return;
     }
 
+    if (!contactForm.email.trim()) {
+      toast({
+        title: "Email Required",
+        description: "Please enter an email address.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (!validateEmail(contactForm.email)) {
+      toast({
+        title: "Invalid Email",
+        description: "Please enter a valid email address.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     // Validation for trusted contacts
     if (contactForm.contact_type === 'trusted') {
-      if (!contactForm.email || !contactForm.phone) {
+      if (!contactForm.phone.trim()) {
         toast({
-          title: "Complete Information Required",
+          title: "Phone Required",
           description: "Trusted contacts require both email and phone number for security.",
           variant: "destructive",
         });
@@ -103,23 +194,31 @@ export default function Contacts() {
         });
         return;
       }
-    } else {
-      // Regular contacts need at least one contact method
-      if (!contactForm.email && !contactForm.phone) {
-        toast({
-          title: "Contact Method Required",
-          description: "Please provide either an email address or phone number.",
-          variant: "destructive",
-        });
-        return;
-      }
     }
 
+    setIsSaving(true);
+
     try {
+      const email = contactForm.email.trim().toLowerCase();
+      
+      // Check if contact already exists for this user
+      if (!editingContact) {
+        const existingContact = contacts.find(c => c.email?.toLowerCase() === email);
+        if (existingContact) {
+          toast({
+            title: "Contact Exists",
+            description: "A contact with this email address already exists.",
+            variant: "destructive",
+          });
+          setIsSaving(false);
+          return;
+        }
+      }
+
       const contactData = {
-        full_name: contactForm.full_name,
-        email: contactForm.email || null,
-        phone: contactForm.phone || null,
+        full_name: contactForm.full_name.trim(),
+        email: email,
+        phone: contactForm.phone.trim() || null,
         relationship: contactForm.relationship || null,
         contact_type: contactForm.contact_type,
         role: contactForm.contact_type === 'trusted' ? contactForm.role : null,
@@ -140,19 +239,32 @@ export default function Contacts() {
           description: `${contactForm.contact_type === 'trusted' ? 'Trusted' : 'Regular'} contact has been updated successfully.`,
         });
       } else {
+        // Check if user exists in the platform
+        const { exists, user_id } = await checkUserExists(email);
+        
+        const newContactData = {
+          ...contactData,
+          user_id: user?.id,
+          invitation_status: exists ? 'registered' : 'pending'
+        };
+
         // Create new contact
         const { error } = await supabase
           .from('contacts')
-          .insert({
-            ...contactData,
-            user_id: user?.id
-          });
+          .insert(newContactData);
 
         if (error) throw error;
 
+        // Send welcome email for new users
+        if (!exists) {
+          await sendWelcomeEmail(contactData, false);
+        }
+
         toast({
           title: "Contact Added",
-          description: `New ${contactForm.contact_type} contact has been added successfully.`,
+          description: exists 
+            ? `${contactData.full_name} has been added to your contacts.`
+            : `${contactData.full_name} has been invited to join One Final Moment and added to your contacts.`,
         });
       }
 
@@ -166,6 +278,8 @@ export default function Contacts() {
         description: "Failed to save contact. Please try again.",
         variant: "destructive",
       });
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -181,6 +295,25 @@ export default function Contacts() {
     });
     setEditingContact(null);
     setIsAddModalOpen(false);
+  };
+
+  // Functions to toggle section expansion
+  const toggleTrustedSection = () => {
+    const newState = !trustedSectionExpanded;
+    setTrustedSectionExpanded(newState);
+    sessionStorage.setItem('trustedContactsExpanded', JSON.stringify(newState));
+  };
+
+  const toggleRegularSection = () => {
+    const newState = !regularSectionExpanded;
+    setRegularSectionExpanded(newState);
+    sessionStorage.setItem('regularContactsExpanded', JSON.stringify(newState));
+  };
+
+  const openAddModalWithType = (type: 'trusted' | 'regular') => {
+    resetForm();
+    setContactForm(prev => ({ ...prev, contact_type: type }));
+    setIsAddModalOpen(true);
   };
 
   const handleDeleteContact = async (contactId: string) => {
@@ -299,7 +432,7 @@ export default function Contacts() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-subtle flex items-center justify-center pb-20">
+      <div className="min-h-screen bg-gradient-surface flex items-center justify-center pb-20">
         <div className="text-center space-y-4">
           <div className="w-12 h-12 bg-gradient-primary rounded-2xl flex items-center justify-center mx-auto shadow-gentle animate-pulse">
             <Users className="w-6 h-6 text-primary-foreground" />
@@ -311,229 +444,306 @@ export default function Contacts() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-subtle pb-20">
-      {/* Header */}
-      <div className="pt-12 pb-8 px-6 max-w-2xl mx-auto text-center">
-        <div className="w-16 h-16 bg-gradient-primary rounded-full flex items-center justify-center mx-auto mb-4 shadow-gentle">
-          <Users className="w-8 h-8 text-primary-foreground" />
-        </div>
-        <h1 className="text-3xl md:text-4xl font-bold text-foreground mb-4">
-          My Contacts & Permissions
-        </h1>
-        <p className="text-lg text-muted-foreground max-w-xl mx-auto">
-          Manage who can receive your memories and help deliver your messages
-        </p>
+    <div className="min-h-screen bg-gradient-surface pb-20">
+      {/* Compact Header */}
+      <div className="pt-6 pb-4 px-4 max-w-2xl mx-auto">
+        <Card className="bg-white/50 dark:bg-gray-900/50 backdrop-blur-sm border-0 shadow-gentle">
+          <CardContent className="p-4 space-y-3">
+            <div className="flex items-start space-x-3">
+              <div className="w-10 h-10 bg-gradient-primary rounded-xl flex items-center justify-center flex-shrink-0 shadow-gentle">
+                <Users className="w-5 h-5 text-primary-foreground" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <h1 className="text-xl md:text-2xl font-bold text-foreground leading-tight">
+                  My Contacts & Permissions
+                </h1>
+                <p className="text-sm md:text-base text-muted-foreground mt-1 leading-snug">
+                  Manage who can receive your memories and help deliver your messages
+                </p>
+              </div>
+            </div>
+            
+            <div className="pt-1">
+              <Dialog open={isAddModalOpen} onOpenChange={setIsAddModalOpen}>
+                <DialogTrigger asChild>
+                  <Button 
+                    className="w-full bg-gradient-primary hover:shadow-gentle transition-all duration-300"
+                    onClick={() => {
+                      resetForm();
+                    }}
+                  >
+                    <Plus className="w-4 h-4 mr-2" />
+                    Add New Contact
+                  </Button>
+                </DialogTrigger>
+                
+                {/* Add/Edit Contact Modal */}
+                <DialogContent className="max-w-md mx-auto max-h-[90vh] overflow-y-auto m-4">
+                  <DialogHeader>
+                    <DialogTitle className="text-xl font-bold">
+                      {editingContact ? "Edit Contact" : "Add New Contact"}
+                    </DialogTitle>
+                    <p className="text-sm text-muted-foreground">
+                      Choose contact type and provide their information
+                    </p>
+                  </DialogHeader>
+
+                  <div className="space-y-6 py-4">
+                    {/* Contact Type Selection */}
+                    <div className="space-y-3">
+                      <Label className="text-base font-medium">Contact Type</Label>
+                      <RadioGroup
+                        value={contactForm.contact_type}
+                        onValueChange={(value) => setContactForm(prev => ({ 
+                          ...prev, 
+                          contact_type: value as 'trusted' | 'regular',
+                          role: value === 'regular' ? undefined : prev.role,
+                          is_primary: value === 'regular' ? false : prev.is_primary
+                        }))}
+                        className="grid grid-cols-1 gap-3"
+                      >
+                        <div className="flex items-start space-x-3 p-3 border rounded-lg hover:bg-muted/50 transition-colors">
+                          <RadioGroupItem value="trusted" id="trusted" className="mt-1" />
+                          <div className="flex-1">
+                            <Label htmlFor="trusted" className="text-sm font-medium flex items-center">
+                              <Shield className="w-4 h-4 mr-2 text-primary" />
+                              Trusted Contact
+                            </Label>
+                            <p className="text-xs text-muted-foreground mt-1">
+                              Can help deliver messages and manage your wishes. Requires email and phone.
+                            </p>
+                          </div>
+                        </div>
+                        <div className="flex items-start space-x-3 p-3 border rounded-lg hover:bg-muted/50 transition-colors">
+                          <RadioGroupItem value="regular" id="regular" className="mt-1" />
+                          <div className="flex-1">
+                            <Label htmlFor="regular" className="text-sm font-medium flex items-center">
+                              <Heart className="w-4 h-4 mr-2 text-primary" />
+                              Regular Contact
+                            </Label>
+                            <p className="text-xs text-muted-foreground mt-1">
+                              Can receive your memories but cannot manage deliveries.
+                            </p>
+                          </div>
+                        </div>
+                      </RadioGroup>
+                    </div>
+
+                    {/* Role Selection for Trusted Contacts */}
+                    {contactForm.contact_type === 'trusted' && (
+                      <div className="space-y-2">
+                        <Label htmlFor="role">Role</Label>
+                        <Select value={contactForm.role} onValueChange={(value) => setContactForm(prev => ({ ...prev, role: value as any }))}>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select a role" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="executor">
+                              <div className="flex items-center">
+                                <Crown className="w-4 h-4 mr-2" />
+                                Executor
+                              </div>
+                            </SelectItem>
+                            <SelectItem value="legacy_messenger">
+                              <div className="flex items-center">
+                                <Star className="w-4 h-4 mr-2" />
+                                Legacy Messenger
+                              </div>
+                            </SelectItem>
+                            <SelectItem value="guardian">
+                              <div className="flex items-center">
+                                <Shield className="w-4 h-4 mr-2" />
+                                Guardian
+                              </div>
+                            </SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    )}
+
+                    {/* Contact Information */}
+                    <div className="space-y-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="full_name">Full Name</Label>
+                        <Input
+                          id="full_name"
+                          value={contactForm.full_name}
+                          onChange={(e) => setContactForm(prev => ({ ...prev, full_name: e.target.value }))}
+                          placeholder="Enter full name"
+                        />
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label htmlFor="relationship">Relationship</Label>
+                        <Select
+                          value={contactForm.relationship}
+                          onValueChange={(value) => setContactForm(prev => ({ ...prev, relationship: value }))}
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select a relationship" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {RELATIONSHIP_OPTIONS.map(option => (
+                              <SelectItem key={option} value={option}>
+                                {option}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label htmlFor="email">
+                          Email Address
+                          {contactForm.contact_type === 'trusted' && <span className="text-destructive ml-1">*</span>}
+                        </Label>
+                        <Input
+                          id="email"
+                          type="email"
+                          value={contactForm.email}
+                          onChange={(e) => setContactForm(prev => ({ ...prev, email: e.target.value }))}
+                          placeholder="Enter email address"
+                        />
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label htmlFor="phone">
+                          Phone Number
+                          {contactForm.contact_type === 'trusted' && <span className="text-destructive ml-1">*</span>}
+                        </Label>
+                        <Input
+                          id="phone"
+                          type="tel"
+                          value={contactForm.phone}
+                          onChange={(e) => setContactForm(prev => ({ ...prev, phone: e.target.value }))}
+                          placeholder="Enter phone number"
+                        />
+                      </div>
+
+                      {contactForm.contact_type === 'trusted' && (
+                        <div className="flex items-center space-x-2">
+                          <input
+                            type="checkbox"
+                            id="is_primary"
+                            checked={contactForm.is_primary}
+                            onChange={(e) => setContactForm(prev => ({ ...prev, is_primary: e.target.checked }))}
+                            className="rounded border-border"
+                          />
+                          <Label htmlFor="is_primary" className="text-sm">
+                            Set as Primary Contact
+                          </Label>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="flex flex-col sm:flex-row gap-3 pt-4">
+                    <Button 
+                      onClick={handleSaveContact}
+                      className="flex-1"
+                      disabled={isSaving}
+                    >
+                      {isSaving ? "Saving..." : (editingContact ? "Update Contact" : "Add Contact")}
+                    </Button>
+                    <Button 
+                      variant="outline" 
+                      onClick={resetForm}
+                      className="flex-1"
+                    >
+                      Cancel
+                    </Button>
+                  </div>
+                </DialogContent>
+              </Dialog>
+            </div>
+          </CardContent>
+        </Card>
       </div>
 
-      <div className="px-6 max-w-2xl mx-auto space-y-8">
-        {/* Add Contact Button */}
-        <div className="flex justify-center">
-          <Dialog open={isAddModalOpen} onOpenChange={setIsAddModalOpen}>
-            <DialogTrigger asChild>
-              <Button 
-                className="bg-gradient-primary hover:shadow-gentle transition-all duration-300"
-                onClick={() => {
-                  resetForm();
-                }}
-              >
-                <Plus className="w-4 h-4 mr-2" />
-                Add New Contact
-              </Button>
-            </DialogTrigger>
-            
-            {/* Add/Edit Contact Modal */}
-            <DialogContent className="max-w-md mx-auto max-h-[90vh] overflow-y-auto m-4">
-              <DialogHeader>
-                <DialogTitle className="text-xl font-bold">
-                  {editingContact ? "Edit Contact" : "Add New Contact"}
-                </DialogTitle>
-                <p className="text-sm text-muted-foreground">
-                  Choose contact type and provide their information
-                </p>
-              </DialogHeader>
-
-              <div className="space-y-6 py-4">
-                {/* Contact Type Selection */}
-                <div className="space-y-3">
-                  <Label className="text-base font-medium">Contact Type</Label>
-                  <RadioGroup
-                    value={contactForm.contact_type}
-                    onValueChange={(value) => setContactForm(prev => ({ 
-                      ...prev, 
-                      contact_type: value as 'trusted' | 'regular',
-                      role: value === 'regular' ? undefined : prev.role,
-                      is_primary: value === 'regular' ? false : prev.is_primary
-                    }))}
-                    className="grid grid-cols-1 gap-3"
-                  >
-                    <div className="flex items-start space-x-3 p-3 border rounded-lg hover:bg-muted/50 transition-colors">
-                      <RadioGroupItem value="trusted" id="trusted" className="mt-1" />
-                      <div className="flex-1">
-                        <Label htmlFor="trusted" className="text-sm font-medium flex items-center">
-                          <Shield className="w-4 h-4 mr-2 text-primary" />
-                          Trusted Contact
-                        </Label>
-                        <p className="text-xs text-muted-foreground mt-1">
-                          Can help deliver messages and manage your wishes. Requires email and phone.
-                        </p>
-                      </div>
-                    </div>
-                    <div className="flex items-start space-x-3 p-3 border rounded-lg hover:bg-muted/50 transition-colors">
-                      <RadioGroupItem value="regular" id="regular" className="mt-1" />
-                      <div className="flex-1">
-                        <Label htmlFor="regular" className="text-sm font-medium flex items-center">
-                          <Heart className="w-4 h-4 mr-2 text-primary" />
-                          Regular Contact
-                        </Label>
-                        <p className="text-xs text-muted-foreground mt-1">
-                          Can receive your memories but cannot manage deliveries.
-                        </p>
-                      </div>
-                    </div>
-                  </RadioGroup>
-                </div>
-
-                {/* Role Selection for Trusted Contacts */}
-                {contactForm.contact_type === 'trusted' && (
-                  <div className="space-y-2">
-                    <Label htmlFor="role">Role</Label>
-                    <Select value={contactForm.role} onValueChange={(value) => setContactForm(prev => ({ ...prev, role: value as any }))}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select a role" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="executor">
-                          <div className="flex items-center">
-                            <Crown className="w-4 h-4 mr-2" />
-                            Executor
-                          </div>
-                        </SelectItem>
-                        <SelectItem value="legacy_messenger">
-                          <div className="flex items-center">
-                            <Star className="w-4 h-4 mr-2" />
-                            Legacy Messenger
-                          </div>
-                        </SelectItem>
-                        <SelectItem value="guardian">
-                          <div className="flex items-center">
-                            <Shield className="w-4 h-4 mr-2" />
-                            Guardian
-                          </div>
-                        </SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                )}
-
-                {/* Contact Information */}
-                <div className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="full_name">Full Name</Label>
-                    <Input
-                      id="full_name"
-                      value={contactForm.full_name}
-                      onChange={(e) => setContactForm(prev => ({ ...prev, full_name: e.target.value }))}
-                      placeholder="Enter full name"
-                    />
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="relationship">Relationship</Label>
-                    <Input
-                      id="relationship"
-                      value={contactForm.relationship}
-                      onChange={(e) => setContactForm(prev => ({ ...prev, relationship: e.target.value }))}
-                      placeholder="e.g. Daughter, Son, Spouse"
-                    />
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="email">
-                      Email Address
-                      {contactForm.contact_type === 'trusted' && <span className="text-destructive ml-1">*</span>}
-                    </Label>
-                    <Input
-                      id="email"
-                      type="email"
-                      value={contactForm.email}
-                      onChange={(e) => setContactForm(prev => ({ ...prev, email: e.target.value }))}
-                      placeholder="Enter email address"
-                    />
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="phone">
-                      Phone Number
-                      {contactForm.contact_type === 'trusted' && <span className="text-destructive ml-1">*</span>}
-                    </Label>
-                    <Input
-                      id="phone"
-                      type="tel"
-                      value={contactForm.phone}
-                      onChange={(e) => setContactForm(prev => ({ ...prev, phone: e.target.value }))}
-                      placeholder="Enter phone number"
-                    />
-                  </div>
-
-                  {contactForm.contact_type === 'trusted' && (
-                    <div className="flex items-center space-x-2">
-                      <input
-                        type="checkbox"
-                        id="is_primary"
-                        checked={contactForm.is_primary}
-                        onChange={(e) => setContactForm(prev => ({ ...prev, is_primary: e.target.checked }))}
-                        className="rounded border-border"
-                      />
-                      <Label htmlFor="is_primary" className="text-sm">
-                        Set as Primary Contact
-                      </Label>
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              <div className="flex flex-col sm:flex-row gap-3 pt-4">
-                <Button 
-                  onClick={handleSaveContact}
-                  className="flex-1"
-                >
-                  {editingContact ? "Update Contact" : "Add Contact"}
-                </Button>
-                <Button 
-                  variant="outline" 
-                  onClick={resetForm}
-                  className="flex-1"
-                >
-                  Cancel
-                </Button>
-              </div>
-            </DialogContent>
-          </Dialog>
-        </div>
+             <div className="px-4 max-w-2xl mx-auto space-y-4">
 
         {/* Trusted Contacts Section */}
         <div className="space-y-4">
-          <div className="flex items-center space-x-3">
-            <Shield className="w-6 h-6 text-primary" />
-            <h2 className="text-xl font-semibold text-foreground">Trusted Contacts</h2>
-            <Badge variant="secondary" className="text-xs">
-              {trustedContacts.length}
-            </Badge>
+          <div className="bg-gradient-to-r from-amber-50 to-orange-50 dark:from-amber-950/20 dark:to-orange-950/20 border border-amber-200 dark:border-amber-800 rounded-lg p-4">
+            <div className="flex items-start justify-between mb-3">
+              <div className="flex items-center space-x-3">
+                <div className="w-8 h-8 bg-amber-500 rounded-lg flex items-center justify-center">
+                  <Shield className="w-5 h-5 text-white" />
+                </div>
+                <div className="flex items-center space-x-2">
+                  <h2 className="text-xl font-semibold text-foreground">Trusted Contacts</h2>
+                  <Badge variant="secondary" className="text-xs">
+                    {trustedContacts.length}
+                  </Badge>
+                </div>
+              </div>
+              <div className="flex items-center space-x-2">
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button variant="ghost" size="sm" className="w-6 h-6 p-0 text-muted-foreground hover:text-foreground">
+                        <Info className="w-4 h-4" />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent side="left" className="max-w-xs">
+                      <p className="text-sm">Trusted contacts have special administrative privileges and can handle sensitive matters on your behalf.</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  className="w-6 h-6 p-0 text-muted-foreground hover:text-foreground transition-transform duration-200"
+                  onClick={toggleTrustedSection}
+                  style={{ transform: trustedSectionExpanded ? 'rotate(180deg)' : 'rotate(0deg)' }}
+                >
+                  <ChevronDown className="w-4 h-4" />
+                </Button>
+              </div>
+            </div>
+            
+            <div className="space-y-3">
+              <p className="text-sm font-medium text-amber-800 dark:text-amber-200">
+                Can manage your message delivery and confirm your passing.
+              </p>
+              
+              <div 
+                className={`overflow-hidden transition-all duration-300 ease-in-out ${
+                  trustedSectionExpanded ? 'max-h-40 opacity-100' : 'max-h-0 opacity-0'
+                }`}
+              >
+                <div className="space-y-2 pt-1">
+                  <p className="text-sm text-amber-700 dark:text-amber-300">
+                    Trusted contacts can manage your message delivery, confirm your passing, and release your private memories to your regular contacts if needed.
+                  </p>
+                  <p className="text-xs text-amber-600 dark:text-amber-400">
+                    Requires both email and phone for security verification.
+                  </p>
+                </div>
+              </div>
+              
+              <Button 
+                size="sm" 
+                variant="outline" 
+                onClick={() => openAddModalWithType('trusted')}
+                className="w-full bg-amber-50 hover:bg-amber-100 dark:bg-amber-950/30 dark:hover:bg-amber-950/50 border-amber-300 text-amber-700 hover:text-amber-800 dark:text-amber-300 dark:hover:text-amber-200"
+              >
+                <Plus className="w-4 h-4 mr-2" />
+                Add Trusted Contact
+              </Button>
+            </div>
           </div>
-          <p className="text-sm text-muted-foreground mb-4">
-            Trusted contacts can help deliver your messages and manage your wishes. Add someone you trust deeply.
-          </p>
 
           {trustedContacts.length > 0 ? (
             <div className="grid gap-4">
               {trustedContacts.map((contact) => {
                 const RoleIcon = getRoleIcon(contact.role);
                 return (
-                  <Card key={contact.id} className="shadow-card hover:shadow-gentle transition-all duration-300 border-primary/20">
+                  <Card key={contact.id} className="shadow-card hover:shadow-gentle transition-all duration-300 border-amber-200 dark:border-amber-800 bg-gradient-to-r from-amber-50/30 to-orange-50/30 dark:from-amber-950/10 dark:to-orange-950/10">
                     <CardContent className="p-4">
                       <div className="flex items-start space-x-3">
-                        <div className="w-12 h-12 bg-gradient-primary rounded-full flex items-center justify-center flex-shrink-0">
-                          <RoleIcon className="w-6 h-6 text-primary-foreground" />
+                        <div className="w-12 h-12 bg-gradient-to-br from-amber-500 to-orange-500 rounded-full flex items-center justify-center flex-shrink-0">
+                          <RoleIcon className="w-6 h-6 text-white" />
                         </div>
                         
                         <div className="flex-1 min-w-0">
@@ -541,12 +751,12 @@ export default function Contacts() {
                             <h3 className="font-semibold text-foreground truncate">
                               {contact.full_name}
                             </h3>
-                            <Badge variant="default" className="text-xs bg-primary">
+                            <Badge variant="default" className="text-xs bg-amber-600 hover:bg-amber-700">
                               <Crown className="w-3 h-3 mr-1" />
                               {getRoleLabel(contact.role)}
                             </Badge>
                             {contact.is_primary && (
-                              <Badge variant="secondary" className="text-xs">
+                              <Badge variant="secondary" className="text-xs bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200">
                                 Primary
                               </Badge>
                             )}
@@ -574,12 +784,12 @@ export default function Contacts() {
                           </div>
                         </div>
                         
-                        <div className="flex flex-col gap-1">
+                        <div className="flex flex-col space-y-2">
                           <Button
                             variant="ghost"
                             size="sm"
                             onClick={() => openEditModal(contact)}
-                            className="w-8 h-8 p-0"
+                            className="w-8 h-8 p-0 hover:bg-amber-200/50 dark:hover:bg-amber-800/50"
                           >
                             <Edit className="w-4 h-4" />
                           </Button>
@@ -587,8 +797,8 @@ export default function Contacts() {
                             variant="ghost"
                             size="sm"
                             onClick={() => handleDemoteContact(contact)}
-                            className="w-8 h-8 p-0 text-muted-foreground hover:text-foreground"
-                            title="Demote to Regular"
+                            className="w-8 h-8 p-0 hover:bg-amber-200/50 dark:hover:bg-amber-800/50"
+                            title="Demote to regular contact"
                           >
                             <ArrowDown className="w-4 h-4" />
                           </Button>
@@ -596,7 +806,7 @@ export default function Contacts() {
                             variant="ghost"
                             size="sm"
                             onClick={() => handleDeleteContact(contact.id)}
-                            className="w-8 h-8 p-0 text-destructive hover:text-destructive"
+                            className="w-8 h-8 p-0 hover:bg-red-200/50 dark:hover:bg-red-800/50 text-red-600 hover:text-red-700"
                           >
                             <Trash2 className="w-4 h-4" />
                           </Button>
@@ -608,16 +818,16 @@ export default function Contacts() {
               })}
             </div>
           ) : (
-            <Card className="shadow-card bg-muted/20 border-dashed border-2 border-muted-foreground/20">
+            <Card className="shadow-card bg-amber-50/50 dark:bg-amber-950/20 border-dashed border-2 border-amber-300/50 dark:border-amber-700/50">
               <CardContent className="p-8 text-center">
-                <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center mx-auto mb-4">
-                  <Shield className="w-8 h-8 text-muted-foreground" />
+                <div className="w-16 h-16 bg-amber-100 dark:bg-amber-900/30 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <Shield className="w-8 h-8 text-amber-600 dark:text-amber-400" />
                 </div>
                 <h3 className="font-medium text-foreground mb-2">
                   No trusted contacts yet
                 </h3>
                 <p className="text-sm text-muted-foreground">
-                  Add trusted contacts to help manage your message delivery
+                  Add trusted contacts to help manage your message delivery and final wishes
                 </p>
               </CardContent>
             </Card>
@@ -626,25 +836,84 @@ export default function Contacts() {
 
         {/* Regular Contacts Section */}
         <div className="space-y-4">
-          <div className="flex items-center space-x-3">
-            <Users className="w-6 h-6 text-primary" />
-            <h2 className="text-xl font-semibold text-foreground">Other Contacts</h2>
-            <Badge variant="outline" className="text-xs">
-              {regularContacts.length}
-            </Badge>
+          <div className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-950/20 dark:to-indigo-950/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
+            <div className="flex items-start justify-between mb-3">
+              <div className="flex items-center space-x-3">
+                <div className="w-8 h-8 bg-blue-500 rounded-lg flex items-center justify-center">
+                  <Users className="w-5 h-5 text-white" />
+                </div>
+                <div className="flex items-center space-x-2">
+                  <h2 className="text-xl font-semibold text-foreground">Regular Contacts</h2>
+                  <Badge variant="outline" className="text-xs border-blue-300 text-blue-700 dark:border-blue-700 dark:text-blue-300">
+                    {regularContacts.length}
+                  </Badge>
+                </div>
+              </div>
+              <div className="flex items-center space-x-2">
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button variant="ghost" size="sm" className="w-6 h-6 p-0 text-muted-foreground hover:text-foreground">
+                        <Info className="w-4 h-4" />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent side="left" className="max-w-xs">
+                      <p className="text-sm">Regular contacts can receive videos but cannot access administrative features or manage deliveries.</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  className="w-6 h-6 p-0 text-muted-foreground hover:text-foreground transition-transform duration-200"
+                  onClick={toggleRegularSection}
+                  style={{ transform: regularSectionExpanded ? 'rotate(180deg)' : 'rotate(0deg)' }}
+                >
+                  <ChevronDown className="w-4 h-4" />
+                </Button>
+              </div>
+            </div>
+            
+            <div className="space-y-3">
+              <p className="text-sm font-medium text-blue-800 dark:text-blue-200">
+                Can receive your memories but cannot manage deliveries.
+              </p>
+              
+              <div 
+                className={`overflow-hidden transition-all duration-300 ease-in-out ${
+                  regularSectionExpanded ? 'max-h-40 opacity-100' : 'max-h-0 opacity-0'
+                }`}
+              >
+                <div className="space-y-2 pt-1">
+                  <p className="text-sm text-blue-700 dark:text-blue-300">
+                    Regular contacts can receive the memories you choose to share, but cannot manage deliveries or access your administrative features.
+                  </p>
+                  <p className="text-xs text-blue-600 dark:text-blue-400">
+                    Perfect for friends and family who you want to share memories with.
+                  </p>
+                </div>
+              </div>
+              
+              <Button 
+                size="sm" 
+                variant="outline" 
+                onClick={() => openAddModalWithType('regular')}
+                className="w-full bg-blue-50 hover:bg-blue-100 dark:bg-blue-950/30 dark:hover:bg-blue-950/50 border-blue-300 text-blue-700 hover:text-blue-800 dark:text-blue-300 dark:hover:text-blue-200"
+              >
+                <Plus className="w-4 h-4 mr-2" />
+                Add Regular Contact
+              </Button>
+            </div>
           </div>
-          <p className="text-sm text-muted-foreground mb-4">
-            Regular contacts can receive your memories, but cannot manage or confirm deliveries.
-          </p>
 
           {regularContacts.length > 0 ? (
             <div className="grid gap-4">
               {regularContacts.map((contact) => (
-                <Card key={contact.id} className="shadow-card hover:shadow-gentle transition-all duration-300">
+                <Card key={contact.id} className="shadow-card hover:shadow-gentle transition-all duration-300 border-blue-200 dark:border-blue-800 bg-gradient-to-r from-blue-50/30 to-indigo-50/30 dark:from-blue-950/10 dark:to-indigo-950/10">
                   <CardContent className="p-4">
                     <div className="flex items-start space-x-3">
-                      <div className="w-12 h-12 bg-muted rounded-full flex items-center justify-center flex-shrink-0">
-                        <User className="w-6 h-6 text-muted-foreground" />
+                      <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-indigo-500 rounded-full flex items-center justify-center flex-shrink-0">
+                        <User className="w-6 h-6 text-white" />
                       </div>
                       
                       <div className="flex-1 min-w-0">
@@ -652,7 +921,7 @@ export default function Contacts() {
                           <h3 className="font-semibold text-foreground truncate">
                             {contact.full_name}
                           </h3>
-                          <Badge variant="outline" className="text-xs">
+                          <Badge variant="outline" className="text-xs border-blue-300 text-blue-700 dark:border-blue-700 dark:text-blue-300">
                             Regular
                           </Badge>
                         </div>
@@ -679,12 +948,12 @@ export default function Contacts() {
                         </div>
                       </div>
                       
-                      <div className="flex flex-col gap-1">
+                      <div className="flex flex-col space-y-2">
                         <Button
                           variant="ghost"
                           size="sm"
                           onClick={() => openEditModal(contact)}
-                          className="w-8 h-8 p-0"
+                          className="w-8 h-8 p-0 hover:bg-blue-200/50 dark:hover:bg-blue-800/50"
                         >
                           <Edit className="w-4 h-4" />
                         </Button>
@@ -693,8 +962,8 @@ export default function Contacts() {
                             variant="ghost"
                             size="sm"
                             onClick={() => handlePromoteContact(contact)}
-                            className="w-8 h-8 p-0 text-primary hover:text-primary"
-                            title="Promote to Trusted"
+                            className="w-8 h-8 p-0 hover:bg-blue-200/50 dark:hover:bg-blue-800/50"
+                            title="Promote to trusted contact"
                           >
                             <ArrowUp className="w-4 h-4" />
                           </Button>
@@ -703,7 +972,7 @@ export default function Contacts() {
                           variant="ghost"
                           size="sm"
                           onClick={() => handleDeleteContact(contact.id)}
-                          className="w-8 h-8 p-0 text-destructive hover:text-destructive"
+                          className="w-8 h-8 p-0 hover:bg-red-200/50 dark:hover:bg-red-800/50 text-red-600 hover:text-red-700"
                         >
                           <Trash2 className="w-4 h-4" />
                         </Button>
@@ -714,10 +983,10 @@ export default function Contacts() {
               ))}
             </div>
           ) : (
-            <Card className="shadow-card bg-muted/20 border-dashed border-2 border-muted-foreground/20">
+            <Card className="shadow-card bg-blue-50/50 dark:bg-blue-950/20 border-dashed border-2 border-blue-300/50 dark:border-blue-700/50">
               <CardContent className="p-8 text-center">
-                <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center mx-auto mb-4">
-                  <Users className="w-8 h-8 text-muted-foreground" />
+                <div className="w-16 h-16 bg-blue-100 dark:bg-blue-900/30 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <Users className="w-8 h-8 text-blue-600 dark:text-blue-400" />
                 </div>
                 <h3 className="font-medium text-foreground mb-2">
                   No regular contacts yet
@@ -730,32 +999,7 @@ export default function Contacts() {
           )}
         </div>
 
-        {/* Info Section */}
-        <Card className="shadow-card bg-card border-primary/20">
-          <CardHeader className="pb-3">
-            <CardTitle className="flex items-center space-x-2 text-lg">
-              <Info className="w-5 h-5 text-primary" />
-              <span>Contact Types</span>
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4 text-sm text-muted-foreground">
-            <div>
-              <p className="font-medium text-foreground mb-1 flex items-center">
-                <Crown className="w-4 h-4 mr-2 text-primary" />
-                Trusted Contacts
-              </p>
-              <p>Can manage message delivery, confirm deliveries, and step in during emergencies. Require both email and phone for security.</p>
-            </div>
-            <Separator />
-            <div>
-              <p className="font-medium text-foreground mb-1 flex items-center">
-                <Heart className="w-4 h-4 mr-2 text-primary" />
-                Regular Contacts
-              </p>
-              <p>Can receive your memories and messages but cannot manage deliveries or access administrative functions.</p>
-            </div>
-          </CardContent>
-        </Card>
+
       </div>
     </div>
   );

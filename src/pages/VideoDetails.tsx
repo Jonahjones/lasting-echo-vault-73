@@ -5,6 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Switch } from "@/components/ui/switch";
 import { ArrowLeft } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useVideoLibrary } from "@/contexts/VideoLibraryContext";
@@ -151,31 +152,25 @@ export default function VideoDetails() {
 
   return (
     <>
-      <div className="min-h-screen bg-background pb-20">
-        {/* Header */}
-        <div className="bg-card border-b border-border sticky top-0 z-40">
-          <div className="flex items-center justify-between px-4 py-4 max-w-sm mx-auto">
+      <div className="min-h-screen bg-background">
+        {/* Minimal Header */}
+        <div className="bg-card/80 backdrop-blur-sm border-b border-border sticky top-0 z-40">
+          <div className="flex items-center justify-between px-4 py-3 max-w-md mx-auto">
             <Button 
               variant="ghost" 
               size="sm" 
               onClick={() => navigate("/record")}
+              className="text-muted-foreground hover:text-foreground"
             >
-              <ArrowLeft className="w-4 h-4 mr-2" />
+              <ArrowLeft className="w-4 h-4 mr-1" />
               Back
             </Button>
-            <div className="text-center">
-              <h1 className="text-xl font-semibold text-foreground">
-                Complete Your Message
-              </h1>
-              <p className="text-sm text-muted-foreground">
-                Set sharing and delivery options
-              </p>
-            </div>
-            <div className="w-16"></div>
+            <h1 className="text-lg font-medium text-foreground">Complete Your Message</h1>
+            <div className="w-12"></div>
           </div>
         </div>
 
-        <div className="px-4 py-6 space-y-6 max-w-sm mx-auto">
+        <div className="px-4 py-4 space-y-6 max-w-md mx-auto pb-24">
           {/* Storage Limit Banner */}
           <StorageLimitBanner 
             videoCount={videoCount}
@@ -183,92 +178,133 @@ export default function VideoDetails() {
             isAtLimit={isAtStorageLimit}
           />
 
-          {/* Video Preview */}
-          <Card className="shadow-card">
-            <CardHeader>
-              <CardTitle className="text-lg">Your Recording</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="aspect-video bg-muted rounded-lg overflow-hidden relative">
-                {thumbnailUrl ? (
-                  <img 
-                    src={thumbnailUrl} 
-                    alt="Video thumbnail"
-                    className="w-full h-full object-cover"
-                  />
-                ) : (
-                  <div className="w-full h-full bg-gradient-to-br from-primary/20 to-accent/20 flex items-center justify-center">
-                    <div className="text-sm text-muted-foreground">Generating thumbnail...</div>
+          {/* Compact Video Preview */}
+          <div className="aspect-video bg-muted rounded-xl overflow-hidden relative border border-border">
+            {thumbnailUrl ? (
+              <img 
+                src={thumbnailUrl} 
+                alt="Video thumbnail"
+                className="w-full h-full object-cover"
+              />
+            ) : (
+              <div className="w-full h-full bg-gradient-to-br from-primary/10 to-cta/10 flex items-center justify-center">
+                <div className="text-sm text-muted-foreground">Generating preview...</div>
+              </div>
+            )}
+            <video ref={videoRef} className="hidden" muted playsInline />
+            <canvas ref={canvasRef} className="hidden" />
+          </div>
+
+          {/* Title Input */}
+          <div className="space-y-2">
+            <Input
+              placeholder="Give your message a title..."
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              className="text-lg font-medium border-border/60 focus:border-primary h-12"
+            />
+            <Textarea
+              placeholder="Add a description (optional)"
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              className="min-h-[60px] resize-none border-border/60 focus:border-primary"
+            />
+          </div>
+
+          {/* Privacy Toggle - Prominent */}
+          <div className="bg-card border border-border rounded-xl p-4">
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center space-x-3">
+                <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${isPublic ? 'bg-accent text-accent-foreground' : 'bg-primary text-primary-foreground'}`}>
+                  {isPublic ? '🌐' : '🔒'}
+                </div>
+                <div>
+                  <p className="font-medium text-foreground">
+                    {isPublic ? 'Public Video' : 'Private Video'}
+                  </p>
+                  <p className="text-sm text-muted-foreground">
+                    {isPublic ? 'Anyone can discover and view' : 'Only selected people can view'}
+                  </p>
+                </div>
+              </div>
+              <Switch 
+                checked={isPublic} 
+                onCheckedChange={setIsPublic}
+                className="data-[state=checked]:bg-accent"
+              />
+            </div>
+          </div>
+
+          {/* Delivery Options */}
+          <div className="bg-card border border-border rounded-xl p-4">
+            <h3 className="font-medium text-foreground mb-4">Delivery Options</h3>
+            
+            {isPublic ? (
+              <div className="space-y-3">
+                <div 
+                  className={`p-3 rounded-lg border cursor-pointer transition-all ${
+                    deliveryOption === 'send-now' 
+                      ? 'border-cta bg-cta/5 ring-1 ring-cta/20' 
+                      : 'border-border hover:border-border/80'
+                  }`}
+                  onClick={() => setDeliveryOption('send-now')}
+                >
+                  <div className="flex items-center space-x-3">
+                    <div className={`w-2 h-2 rounded-full ${deliveryOption === 'send-now' ? 'bg-cta' : 'bg-muted-foreground'}`} />
+                    <span className="font-medium">Publish Now</span>
                   </div>
-                )}
+                  <p className="text-sm text-muted-foreground ml-5">Share immediately to public feed</p>
+                </div>
+                
+                <div 
+                  className={`p-3 rounded-lg border cursor-pointer transition-all ${
+                    deliveryOption === 'schedule' 
+                      ? 'border-cta bg-cta/5 ring-1 ring-cta/20' 
+                      : 'border-border hover:border-border/80'
+                  }`}
+                  onClick={() => setDeliveryOption('schedule')}
+                >
+                  <div className="flex items-center space-x-3">
+                    <div className={`w-2 h-2 rounded-full ${deliveryOption === 'schedule' ? 'bg-cta' : 'bg-muted-foreground'}`} />
+                    <span className="font-medium">Schedule for Later</span>
+                  </div>
+                  <p className="text-sm text-muted-foreground ml-5">Set a future publish date</p>
+                </div>
               </div>
-              <video ref={videoRef} className="hidden" muted playsInline />
-              <canvas ref={canvasRef} className="hidden" />
-            </CardContent>
-          </Card>
+            ) : (
+              <ContactSelector
+                selectedContacts={selectedContacts}
+                onSelectionChange={setSelectedContacts}
+                onContactsDataChange={setSelectedContactsData}
+                isPublic={isPublic}
+              />
+            )}
 
-          {/* Message Details */}
-          <Card className="shadow-card">
-            <CardHeader>
-              <CardTitle>Message Details</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="title">Title *</Label>
-                <Input
-                  id="title"
-                  placeholder="Give your message a meaningful title"
-                  value={title}
-                  onChange={(e) => setTitle(e.target.value)}
+            {deliveryOption === 'schedule' && (
+              <div className="mt-4 pt-4 border-t border-border">
+                <DeliveryScheduler
+                  deliveryOption={deliveryOption}
+                  scheduledDate={scheduledDate}
+                  onDeliveryOptionChange={setDeliveryOption}
+                  onScheduledDateChange={setScheduledDate}
+                  selectedContactsCount={selectedContacts.length}
+                  isPublic={isPublic}
                 />
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="description">Description (Optional)</Label>
-                <Textarea
-                  id="description"
-                  placeholder="Add context about this message..."
-                  value={description}
-                  onChange={(e) => setDescription(e.target.value)}
-                  className="min-h-[80px]"
-                />
-              </div>
-            </CardContent>
-          </Card>
+            )}
+          </div>
+        </div>
 
-          {/* Privacy Options */}
-          <VideoSharingOptions
-            isPublic={isPublic}
-            onVisibilityChange={setIsPublic}
-          />
-
-          {/* Contact Selection */}
-          <ContactSelector
-            selectedContacts={selectedContacts}
-            onSelectionChange={setSelectedContacts}
-            onContactsDataChange={setSelectedContactsData}
-            isPublic={isPublic}
-          />
-
-          {/* Delivery Scheduler */}
-          <DeliveryScheduler
-            deliveryOption={deliveryOption}
-            scheduledDate={scheduledDate}
-            onDeliveryOptionChange={setDeliveryOption}
-            onScheduledDateChange={setScheduledDate}
-            selectedContactsCount={selectedContacts.length}
-            isPublic={isPublic}
-          />
-
-          {/* Action Button */}
-          <div className="pt-4">
+        {/* Sticky CTA Button */}
+        <div className="fixed bottom-0 left-0 right-0 bg-background/95 backdrop-blur-sm border-t border-border p-4">
+          <div className="max-w-md mx-auto">
             <Button
               size="lg"
-              variant="legacy"
               onClick={() => setShowConfirmation(true)}
               disabled={isLoading || !title.trim() || isAtStorageLimit}
-              className="w-full h-12"
+              className="w-full h-14 text-lg font-medium shadow-lg"
             >
-              {isAtStorageLimit ? "Storage Limit Reached" : "Review & Save Message"}
+              {isLoading ? 'Saving...' : isAtStorageLimit ? 'Storage Limit Reached' : 'Share Video'}
             </Button>
           </div>
         </div>

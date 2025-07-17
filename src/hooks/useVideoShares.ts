@@ -12,6 +12,10 @@ export interface VideoShare {
   status: 'active' | 'revoked' | 'pending';
   shared_at: string;
   viewed_at?: string;
+  is_legacy_release?: boolean;
+  released_by_name?: string;
+  deceased_user_id?: string;
+  legacy_release_date?: string;
   video?: {
     id: string;
     title: string;

@@ -4,7 +4,12 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
+import "@/lib/i18n"; // Initialize i18n
 import { AuthProvider } from "@/contexts/AuthContext";
+import { PricingProvider } from "@/contexts/PricingContext";
+import { ConfigProvider } from "@/contexts/ConfigContext";
+import { CategoriesProvider } from "@/contexts/CategoriesContext";
+import { PromptsProvider } from "@/contexts/PromptsContext";
 import { VideoLibraryProvider } from "@/contexts/VideoLibraryContext";
 import { NotificationsProvider } from "@/contexts/NotificationsContext";
 import { RealtimeProvider } from "@/contexts/RealtimeContext";
@@ -29,6 +34,22 @@ import { useState, useEffect } from "react";
 function AppRoutes() {
   const { user, profile, isLoading, error, retry } = useAuth();
   const [loadingTimeout, setLoadingTimeout] = useState(false);
+  const [isProfileLoading, setIsProfileLoading] = useState(false);
+
+  // Track when we're waiting for profile after user is authenticated
+  useEffect(() => {
+    if (user && !profile && !isLoading) {
+      setIsProfileLoading(true);
+      // Give it a reasonable time to load the profile
+      const timeout = setTimeout(() => {
+        setIsProfileLoading(false);
+      }, 3000); // 3 second window for profile to load
+
+      return () => clearTimeout(timeout);
+    } else {
+      setIsProfileLoading(false);
+    }
+  }, [user, profile, isLoading]);
 
   // Set a maximum loading timeout to prevent infinite loading
   useEffect(() => {
@@ -43,14 +64,17 @@ function AppRoutes() {
     }
   }, [isLoading]);
 
-  if (isLoading && !loadingTimeout) {
+  if ((isLoading || isProfileLoading) && !loadingTimeout) {
+    console.log('⏳ App.tsx: Still loading, waiting for profile...', { isLoading, isProfileLoading });
     return (
       <div className="min-h-screen bg-gradient-comfort flex items-center justify-center">
         <div className="text-center space-y-4 max-w-sm mx-auto px-6">
           <div className="w-12 h-12 bg-gradient-primary rounded-2xl flex items-center justify-center mx-auto shadow-gentle animate-pulse">
             <div className="w-6 h-6 rounded-full bg-primary-foreground/50" />
           </div>
-          <p className="text-muted-foreground">Loading your experience...</p>
+          <p className="text-muted-foreground">
+            {isProfileLoading ? 'Loading your profile...' : 'Loading your experience...'}
+          </p>
         </div>
       </div>
     );
@@ -105,20 +129,26 @@ function AppRoutes() {
     );
   }
 
+  // Only check profile status AFTER all loading is complete
   // If we have a user but no profile after loading is complete, force profile setup
-  if (!profile) {
+  if (!isLoading && !isProfileLoading && !profile) {
+    console.log('🚨 App.tsx: No profile found after loading complete, showing ProfileSetup');
     return (
       <Routes>
-        <Route path="*" element={<ProfileSetup onComplete={() => window.location.reload()} />} />
+        <Route path="*" element={<ProfileSetup onComplete={() => {}} />} />
       </Routes>
     );
   }
 
-  // If user is authenticated but hasn't completed onboarding
-  if (!profile.onboarding_completed) {
+  // If user is authenticated but hasn't completed onboarding (only after loading)
+  if (!isLoading && !isProfileLoading && profile && !profile.onboarding_completed) {
+    console.log('🚨 App.tsx: Onboarding not completed, showing ProfileSetup', {
+      onboardingCompleted: profile.onboarding_completed,
+      profileData: profile
+    });
     return (
       <Routes>
-        <Route path="*" element={<ProfileSetup onComplete={() => window.location.reload()} />} />
+        <Route path="*" element={<ProfileSetup onComplete={() => {}} />} />
       </Routes>
     );
   }
@@ -133,6 +163,7 @@ function AppRoutes() {
   }
 
   // Normal app routes for fully onboarded users
+  console.log('✅ App.tsx: Loading complete, showing normal app routes');
   return (
     <>
       <MobileHeader />
@@ -158,24 +189,32 @@ const queryClient = new QueryClient();
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <AuthProvider>
-      <RealtimeProvider>
-        <VideoLibraryProvider>
-          <NotificationsProvider>
-            <TooltipProvider>
-              <Toaster />
-              <Sonner />
-              <BrowserRouter>
-                <div className="min-h-screen bg-background">
-                  <Routes>
-                    <Route path="/admin" element={<Admin />} />
-                    <Route path="*" element={<AppRoutes />} />
-                  </Routes>
-                </div>
-              </BrowserRouter>
-            </TooltipProvider>
-          </NotificationsProvider>
-        </VideoLibraryProvider>
-      </RealtimeProvider>
+      <ConfigProvider>
+        <CategoriesProvider>
+          <PromptsProvider>
+            <PricingProvider>
+            <RealtimeProvider>
+              <VideoLibraryProvider>
+                <NotificationsProvider>
+              <TooltipProvider>
+                <Toaster />
+                <Sonner />
+                <BrowserRouter>
+                  <div className="min-h-screen bg-background">
+                    <Routes>
+                      <Route path="/admin" element={<Admin />} />
+                      <Route path="*" element={<AppRoutes />} />
+                    </Routes>
+                  </div>
+                </BrowserRouter>
+              </TooltipProvider>
+              </NotificationsProvider>
+            </VideoLibraryProvider>
+          </RealtimeProvider>
+          </PricingProvider>
+          </PromptsProvider>
+        </CategoriesProvider>
+      </ConfigProvider>
     </AuthProvider>
   </QueryClientProvider>
 );

@@ -12,7 +12,7 @@ export function RealtimeConnectionStatus() {
           icon: <Wifi className="w-3 h-3" />,
           text: 'Live',
           variant: 'default' as const,
-          className: 'bg-green-500 text-white'
+          className: 'bg-success text-success-foreground'
         };
       case 'CONNECTING':
         return {
