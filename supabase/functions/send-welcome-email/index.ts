@@ -154,7 +154,7 @@ serve(async (req) => {
     // Send email using Resend
     try {
       const emailResponse = await resend.emails.send({
-        from: 'One Final Moment <noreply@onefinalmoment.com>',
+        from: 'One Final Moment <onboarding@resend.dev>',
         to: [contact_email],
         subject: subject,
         html: htmlContent,
