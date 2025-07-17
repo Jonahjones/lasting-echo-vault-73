@@ -1,5 +1,8 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import { Resend } from "npm:resend@2.0.0"
+
+const resend = new Resend(Deno.env.get("RESEND_API_KEY"))
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -148,44 +151,43 @@ serve(async (req) => {
       `
     }
 
-    // Send email using a service like Resend or similar
-    // For now, we'll log the email content and return success
-    console.log('Email would be sent to:', contact_email)
-    console.log('Subject:', subject)
-    console.log('Contact Type:', contact_type)
-    console.log('Is Existing User:', is_existing_user)
-
-    // In a real implementation, you would integrate with an email service here
-    // For example, with Resend:
-    /*
-    const RESEND_API_KEY = Deno.env.get('RESEND_API_KEY')
-    const res = await fetch('https://api.resend.com/emails', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${RESEND_API_KEY}`,
-      },
-      body: JSON.stringify({
+    // Send email using Resend
+    try {
+      const emailResponse = await resend.emails.send({
         from: 'One Final Moment <noreply@onefinalmoment.com>',
         to: [contact_email],
         subject: subject,
         html: htmlContent,
-      }),
-    })
-    */
+      })
 
-    return new Response(
-      JSON.stringify({ 
-        success: true, 
-        message: 'Welcome email prepared successfully',
-        contact_type,
-        is_existing_user 
-      }),
-      {
-        status: 200,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-      }
-    )
+      console.log('Email sent successfully:', emailResponse)
+      
+      return new Response(
+        JSON.stringify({ 
+          success: true, 
+          message: 'Welcome email sent successfully',
+          contact_type,
+          is_existing_user,
+          email_id: emailResponse.data?.id
+        }),
+        {
+          status: 200,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        }
+      )
+    } catch (emailError) {
+      console.error('Error sending email:', emailError)
+      return new Response(
+        JSON.stringify({ 
+          error: 'Failed to send email',
+          details: emailError.message 
+        }),
+        {
+          status: 500,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        }
+      )
+    }
 
   } catch (error) {
     console.error('Error sending welcome email:', error)
