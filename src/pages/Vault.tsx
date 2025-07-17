@@ -146,7 +146,7 @@ export default function Vault() {
             
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               {storagePlans.map((plan) => {
-                const IconComponent = iconMap[plan.icon];
+                const IconComponent = iconMap[plan.icon_name];
                 return (
                   <Card 
                     key={plan.id} 
@@ -154,10 +154,10 @@ export default function Vault() {
                       selectedPlan === plan.id 
                         ? "ring-2 ring-primary shadow-gentle" 
                         : "hover:shadow-gentle"
-                    } ${plan.popular ? "border-primary/50" : ""}`}
+                    } ${plan.is_popular ? "border-primary/50" : ""}`}
                     onClick={() => setSelectedPlan(plan.id)}
                   >
-                    {plan.popular && (
+                    {plan.is_popular && (
                       <div className="absolute -top-3 left-1/2 transform -translate-x-1/2">
                         <Badge className="bg-gradient-accent text-accent-foreground px-3 py-1">
                           Most Popular
@@ -177,7 +177,7 @@ export default function Vault() {
                         </span>
                       </div>
                       <CardDescription className="text-sm">
-                        {plan.storage} • Up to {plan.videos} videos
+                        {plan.storage_gb}GB • Up to {plan.max_videos} videos
                       </CardDescription>
                     </CardHeader>
                     
@@ -225,7 +225,7 @@ export default function Vault() {
                 </div>
                 
                 <div className="flex justify-center space-x-4">
-                  <Button size="lg" variant="legacy" className="min-w-32">
+                  <Button size="lg" variant="primary" className="min-w-32">
                     Secure Payment
                   </Button>
                   <Button 

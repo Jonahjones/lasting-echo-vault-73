@@ -404,7 +404,7 @@ export function VideoRecorder({ onSave, onDiscard, selectedPrompt }: VideoRecord
             !isRecording ? (
               <Button
                 size="lg"
-                variant="legacy"
+                variant="primary"
                 onClick={startRecording}
                 className="w-[90%] mx-auto h-12"
                 aria-label="Start recording your video message"
@@ -416,7 +416,7 @@ export function VideoRecorder({ onSave, onDiscard, selectedPrompt }: VideoRecord
             <div className="grid grid-cols-3 gap-2">
               <Button
                 size="lg"
-                variant="warm"
+                variant="accent"
                 onClick={pauseRecording}
                 className="h-12"
                 aria-label={isPaused ? "Resume recording" : "Pause recording"}
@@ -450,7 +450,7 @@ export function VideoRecorder({ onSave, onDiscard, selectedPrompt }: VideoRecord
           <div className="grid grid-cols-2 gap-2">
             <Button
               size="lg"
-              variant="legacy"
+              variant="primary"
               onClick={handleSave}
               className="h-12"
               aria-label="Save this recording"

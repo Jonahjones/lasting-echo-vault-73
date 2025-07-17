@@ -245,10 +245,10 @@ export function CategoryManagement() {
                     <div className="flex items-center space-x-2">
                       <h3 className="font-medium">{category.label}</h3>
                       {category.is_default && (
-                        <Star className="w-4 h-4 text-yellow-500" title="Default category" />
+                        <Star className="w-4 h-4 text-yellow-500" />
                       )}
                       {!category.is_active && (
-                        <EyeOff className="w-4 h-4 text-muted-foreground" title="Inactive" />
+                        <EyeOff className="w-4 h-4 text-muted-foreground" />
                       )}
                     </div>
                     <div className="flex items-center space-x-4 text-sm text-muted-foreground">

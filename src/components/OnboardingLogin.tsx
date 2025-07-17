@@ -71,7 +71,7 @@ export function OnboardingLogin() {
               {/* Action Button */}
               <Button 
                 size="lg" 
-                variant="legacy" 
+                variant="primary" 
                 className="w-full h-14 text-base font-medium"
               >
                 {isLogin ? "Sign In" : "Create Account"}

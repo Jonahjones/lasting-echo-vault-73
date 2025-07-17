@@ -236,7 +236,7 @@ export function SaveMessageModal({ isOpen, onClose, onSave, videoBlob }: SaveMes
             <Button variant="outline" onClick={onClose} className="flex-1">
               Cancel
             </Button>
-            <Button variant="legacy" onClick={handleSave} className="flex-1">
+            <Button variant="primary" onClick={handleSave} className="flex-1">
               Save Message
             </Button>
           </div>

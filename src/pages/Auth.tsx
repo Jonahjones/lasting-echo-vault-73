@@ -248,7 +248,7 @@ export default function Auth() {
                 <Button 
                   type="submit"
                   size="lg" 
-                  variant="legacy" 
+                  variant="primary" 
                   className="w-full h-16 text-lg font-medium mt-8 shadow-gentle hover:shadow-warm transition-all duration-300 hover:scale-[1.02]"
                   disabled={isLoading}
                 >

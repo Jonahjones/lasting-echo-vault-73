@@ -41,14 +41,14 @@ export function HeroSection() {
           
           {/* CTA Buttons */}
           <div className="flex flex-col sm:flex-row gap-4 justify-center mb-16 animate-gentle-scale">
-            <Button size="lg" variant="legacy" asChild>
+            <Button size="lg" variant="primary" asChild>
               <Link to="/record" className="flex items-center space-x-2">
                 <Play className="w-5 h-5" />
                 <span>Capture Your First Memory</span>
               </Link>
             </Button>
             
-            <Button size="lg" variant="gentle" asChild>
+            <Button size="lg" variant="muted" asChild>
               <Link to="/library" className="flex items-center space-x-2">
                 <Heart className="w-5 h-5" />
                 <span>Explore Inspiring Stories</span>

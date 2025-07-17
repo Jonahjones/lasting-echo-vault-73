@@ -190,7 +190,7 @@ export default function Record() {
 
         {/* Random Prompt Button */}
         <Button 
-          variant="warm" 
+          variant="accent" 
           size="sm" 
           onClick={getRandomPrompt}
           className="w-full h-10"

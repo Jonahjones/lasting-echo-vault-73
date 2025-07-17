@@ -195,7 +195,7 @@ export function VideoConfirmationModal({
               Cancel
             </Button>
             <Button 
-              variant="legacy"
+              variant="primary"
               onClick={onConfirm}
               className="flex-1"
               disabled={isLoading || (deliveryOption === 'schedule' && !scheduledDate)}
