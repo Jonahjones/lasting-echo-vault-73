@@ -133,19 +133,27 @@ export default function Contacts() {
       });
       
       // Call Supabase function to send welcome email
-      const { data, error } = await supabase.functions.invoke('send-welcome-email', {
-        body: {
+      const response = await fetch(`https://fradbhfppmwjcouodahf.supabase.co/functions/v1/send-welcome-email`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZyYWRiaGZwcG13amNvdW9kYWhmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTE2NDkxNDMsImV4cCI6MjA2NzIyNTE0M30.HlIxWduJjc5kXnLzCYxY688dSeT1yj5CfFyjjuZclFw`,
+        },
+        body: JSON.stringify({
           contact_email: contactData.email,
           contact_name: contactData.full_name,
           inviter_name: user?.user_metadata?.display_name || user?.email,
           contact_type: contactData.contact_type,
           is_existing_user: isExistingUser
-        }
+        })
       });
 
-      console.log('Email function response:', { data, error });
+      const data = await response.json();
+      console.log('Direct API response:', { status: response.status, data });
 
-      if (error) throw error;
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${data.error || 'Unknown error'}`);
+      }
     } catch (error) {
       console.error('Error sending welcome email:', error);
       // Don't fail the whole operation, just log the error
