@@ -23,7 +23,7 @@ export default function Vault() {
   const [currentUsage] = useState({
     videos: 3,
     storage: 1.2, // GB
-    maxVideos: 5,
+    maxVideos: 5, // Updated to match new free tier limit
     maxStorage: 2 // GB for free tier
   });
 

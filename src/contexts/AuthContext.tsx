@@ -312,6 +312,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       lastName = nameParts.slice(1).join(' ') || '';
     }
     
+    // For development/testing - you can temporarily disable email confirmation
+    // Remove this option in production!
     const { error } = await supabase.auth.signUp({
       email,
       password,
@@ -322,6 +324,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           last_name: lastName,
           name: name || email.split('@')[0]
         }
+        // Uncomment the line below to skip email verification during testing
+        // emailRedirectTo: undefined  // This disables email verification
       }
     });
     

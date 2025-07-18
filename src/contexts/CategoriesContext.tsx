@@ -172,11 +172,12 @@ export function CategoriesProvider({ children }: { children: ReactNode }) {
       
       setCategories(fallbackCategories);
       
-      toast({
-        title: "Category Loading Error",
-        description: "Using default categories. Some features may be limited.",
-        variant: "destructive"
-      });
+      // Silent fallback - no toast notification needed
+      // toast({
+      //   title: "Category Loading Error",
+      //   description: "Using default categories. Some features may be limited.",
+      //   variant: "destructive"
+      // });
     } finally {
       setLoading(false);
     }

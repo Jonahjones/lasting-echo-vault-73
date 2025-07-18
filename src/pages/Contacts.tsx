@@ -10,12 +10,13 @@ import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { Plus, User, Mail, Phone, Edit, Trash2, Users, Shield, Info, Download, Crown, Star, Heart, ArrowUp, ArrowDown, ChevronDown, ChevronUp } from "lucide-react";
+import { Plus, User, Mail, Phone, Edit, Trash2, Users, Shield, Info, Download, Crown, Star, Heart, ArrowUp, ArrowDown, ChevronDown, ChevronUp, Clock, UserCheck, CheckCircle, AlertTriangle, HelpCircle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 
 interface Contact {
-  id: string;
+  id: string; // This is the relationship ID
+  contact_id?: string; // The actual contact ID
   full_name: string;
   email?: string;
   phone?: string;
@@ -23,7 +24,9 @@ interface Contact {
   is_primary: boolean;
   contact_type: 'trusted' | 'regular';
   role?: 'executor' | 'legacy_messenger' | 'guardian';
-  invitation_status?: string;
+  is_registered_user?: boolean; // Simplified: just track if they're registered
+  linked_user_id?: string;
+  created_at?: string;
 }
 
 // Common relationship options sorted alphabetically
@@ -42,6 +45,39 @@ const RELATIONSHIP_OPTIONS = [
   "Sibling",
   "Spouse"
 ];
+
+// Component to display accurate contact status
+const ContactStatusBadge = ({ contact }: { contact: Contact }) => {
+  const getContactStatus = () => {
+    // For trusted contacts with target_user_id and confirmed_at, they're active
+    if (contact.contact_type === 'trusted' && contact.linked_user_id) {
+      return { text: 'Active', variant: 'default' as const, icon: CheckCircle };
+    }
+    
+    // For contacts with registered status
+    if (contact.is_registered_user) {
+      return { text: 'Active', variant: 'default' as const, icon: CheckCircle };
+    }
+    
+    // For regular contacts
+    if (contact.contact_type === 'regular') {
+      return { text: 'Regular Contact', variant: 'outline' as const, icon: UserCheck };
+    }
+    
+    // Default fallback
+    return { text: 'Contact', variant: 'outline' as const, icon: UserCheck };
+  };
+
+  const status = getContactStatus();
+  const IconComponent = status.icon;
+
+  return (
+    <Badge variant={status.variant} className="flex items-center gap-1">
+      <IconComponent className="w-3 h-3" />
+      {status.text}
+    </Badge>
+  );
+};
 
 export default function Contacts() {
   console.log('Contacts component rendering...');
@@ -76,6 +112,8 @@ export default function Contacts() {
     role: undefined as 'executor' | 'legacy_messenger' | 'guardian' | undefined,
     is_primary: false
   });
+  
+  // Removed email validation state - simplified contact creation
 
   useEffect(() => {
     if (user) {
@@ -83,25 +121,51 @@ export default function Contacts() {
     }
   }, [user]);
 
+  // Removed email validation useEffect - simplified contact creation
+
   const loadContacts = async () => {
     try {
-      const { data, error } = await supabase
-        .from('contacts')
-        .select('*')
-        .eq('user_id', user?.id)
-        .order('contact_type', { ascending: false }) // trusted first
-        .order('is_primary', { ascending: false })
-        .order('created_at', { ascending: false });
-
-      if (error) throw error;
-      setContacts(data || []);
-    } catch (error) {
-      console.error('Error loading contacts:', error);
-      toast({
-        title: "Error",
-        description: "Failed to load contacts. Please try again.",
-        variant: "destructive",
+      console.log('📋 Loading contacts using SIMPLIFIED SYSTEM...');
+      
+      // Use the simplified get_user_contacts function
+      const { data: contactsData, error } = await (supabase as any).rpc('get_user_contacts_simple', {
+        p_user_id: user?.id
       });
+
+      if (error) {
+        console.error('❌ get_user_contacts_simple failed:', error);
+        throw error;
+      }
+      
+      console.log('📋 Loaded contacts from simplified function:', contactsData);
+      
+      if (!contactsData || contactsData.length === 0) {
+        console.log('📭 No contacts found');
+        setContacts([]);
+        return;
+      }
+
+      // Transform to match expected interface
+      const transformedContacts = contactsData.map((contact: any) => ({
+        id: contact.user_contact_id,
+        contact_id: contact.contact_id,
+        full_name: contact.contact_name,
+        email: contact.contact_email,
+        phone: contact.contact_phone,
+        relationship: contact.relationship,
+        is_primary: contact.is_primary,
+        contact_type: contact.relationship_type, // 'trusted' or 'regular'
+        role: contact.role,
+        is_registered_user: contact.is_registered_user,
+        linked_user_id: contact.linked_user_id,
+        created_at: contact.created_at
+      }));
+      
+      setContacts(transformedContacts);
+      
+    } catch (error) {
+      console.error('❌ Error loading contacts:', error);
+      setContacts([]);
     } finally {
       setLoading(false);
     }
@@ -112,14 +176,40 @@ export default function Contacts() {
     return emailRegex.test(email.trim());
   };
 
-  const checkUserExists = async (email: string) => {
+  // Removed checkContactStatus - simplified contact creation
+
+  // Enhanced function to create immediate trusted contact relationship for existing users
+  const createTrustedContactRelationship = async (contactData: any, targetUserId: string | null) => {
     try {
-      // For now, we'll assume the user doesn't exist and let the backend handle the invitation
-      // In a real implementation, you could use a Supabase function to check auth.users
-      // or implement a server-side check
-      return { exists: false, user_id: null };
+      console.log(`🔗 Creating trusted contact relationship:`, {
+        mainUser: user?.id,
+        trustedContactEmail: contactData.email,
+        targetUserId,
+        role: contactData.role
+      });
+
+      const relationshipData = {
+        ...contactData,
+        user_id: user?.id,
+        invitation_status: targetUserId ? 'registered' : 'pending',
+        // For existing users, immediately set as confirmed relationship
+        confirmed_at: targetUserId ? new Date().toISOString() : null,
+        target_user_id: targetUserId // Store the actual user ID for existing users
+      };
+
+      const { data, error } = await supabase
+        .from('contacts')
+        .insert(relationshipData)
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      console.log(`✅ Contact relationship created:`, data);
+      return data;
     } catch (error) {
-      return { exists: false, user_id: null };
+      console.error('❌ Error creating trusted contact relationship:', error);
+      throw error;
     }
   };
 
@@ -202,10 +292,11 @@ export default function Contacts() {
   };
 
   const handleSaveContact = async () => {
+    // Validation
     if (!contactForm.full_name.trim()) {
       toast({
-        title: "Name Required",
-        description: "Please enter a full name for the contact.",
+        title: "Validation Error",
+        description: "Full name is required.",
         variant: "destructive",
       });
       return;
@@ -213,8 +304,8 @@ export default function Contacts() {
 
     if (!contactForm.email.trim()) {
       toast({
-        title: "Email Required",
-        description: "Please enter an email address.",
+        title: "Validation Error",
+        description: "Email address is required.",
         variant: "destructive",
       });
       return;
@@ -222,122 +313,71 @@ export default function Contacts() {
 
     if (!validateEmail(contactForm.email)) {
       toast({
-        title: "Invalid Email",
+        title: "Validation Error",
         description: "Please enter a valid email address.",
         variant: "destructive",
       });
       return;
     }
 
-    // Validation for trusted contacts
-    if (contactForm.contact_type === 'trusted') {
-      if (!contactForm.phone.trim()) {
-        toast({
-          title: "Phone Required",
-          description: "Trusted contacts require both email and phone number for security.",
-          variant: "destructive",
-        });
-        return;
-      }
-      if (!contactForm.role) {
-        toast({
-          title: "Role Required",
-          description: "Please select a role for the trusted contact.",
-          variant: "destructive",
-        });
-        return;
-      }
-    }
-
-    setIsSaving(true);
-
     try {
-      const email = contactForm.email.trim().toLowerCase();
-      
-      // Check if contact already exists for this user
-      if (!editingContact) {
-        const existingContact = contacts.find(c => c.email?.toLowerCase() === email);
-        if (existingContact) {
-          toast({
-            title: "Contact Exists",
-            description: "A contact with this email address already exists.",
-            variant: "destructive",
-          });
-          setIsSaving(false);
-          return;
-        }
+      setIsSaving(true);
+
+      console.log('💾 Adding contact using SIMPLIFIED SYSTEM:', {
+        ...contactForm,
+        email: contactForm.email.toLowerCase().trim()
+      });
+
+      // Use the simplified add_contact function
+      const { data: result, error } = await (supabase as any).rpc('add_contact_simple', {
+        p_email: contactForm.email.trim(),
+        p_full_name: contactForm.full_name.trim(),
+        p_phone: contactForm.phone?.trim() || null,
+        p_relationship: contactForm.relationship?.trim() || null,
+        p_role: contactForm.contact_type === 'trusted' ? contactForm.role : 'legacy_messenger'
+      });
+
+      if (error) {
+        console.error('❌ Simplified function error:', error);
+        throw error;
       }
 
-      const contactData = {
-        full_name: contactForm.full_name.trim(),
-        email: email,
-        phone: contactForm.phone.trim() || null,
-        relationship: contactForm.relationship || null,
-        contact_type: contactForm.contact_type,
-        role: contactForm.contact_type === 'trusted' ? contactForm.role : null,
-        is_primary: contactForm.is_primary && contactForm.contact_type === 'trusted'
-      };
+      console.log('✅ Contact added using simplified function:', result);
 
-      if (editingContact) {
-        // Update existing contact
-        const { error } = await supabase
-          .from('contacts')
-          .update(contactData)
-          .eq('id', editingContact.id);
-
-        if (error) throw error;
-
+      if (result && result.success === false) {
         toast({
-          title: "Contact Updated",
-          description: `${contactForm.contact_type === 'trusted' ? 'Trusted' : 'Regular'} contact has been updated successfully.`,
+          title: "Contact Addition Failed",
+          description: result.error || "Unknown error occurred",
+          variant: "destructive",
         });
-      } else {
-        // Check if user exists in the platform
-        const { exists, user_id } = await checkUserExists(email);
-        
-        const newContactData = {
-          ...contactData,
-          user_id: user?.id,
-          invitation_status: exists ? 'registered' : 'pending'
-        };
-
-        // Create new contact
-        const { error } = await supabase
-          .from('contacts')
-          .insert(newContactData);
-
-        if (error) throw error;
-
-        // Send welcome email for new users
-        if (!exists) {
-          console.log('🎯 Triggering welcome email for new user');
-          const emailResult = await sendWelcomeEmail(contactData, false);
-          
-          if (emailResult && emailResult.success) {
-            console.log('✅ Email sent successfully');
-          } else {
-            console.warn('⚠️ Email sending failed but continuing with contact creation');
-          }
-        } else {
-          console.log('👤 User already exists, skipping welcome email');
-        }
-
-        toast({
-          title: "Contact Added",
-          description: exists 
-            ? `${contactData.full_name} has been added to your contacts.`
-            : `${contactData.full_name} has been invited to join and added to your contacts.`,
-        });
+        return;
       }
 
-      // Reset form and reload
-      resetForm();
+      // Show success message with automatic relationship type
+      toast({
+        title: "Contact Added Successfully",
+        description: result?.message || `${contactForm.full_name} has been added to your contacts.`,
+      });
+
+      // Reset form and refresh contacts
+      setContactForm({
+        full_name: "",
+        email: "",
+        phone: "",
+        relationship: "",
+        contact_type: "regular",
+        role: undefined,
+        is_primary: false,
+      });
+      setIsAddModalOpen(false);
+      setEditingContact(null);
       loadContacts();
+
     } catch (error) {
-      console.error('Error saving contact:', error);
+      console.error('❌ Error adding contact:', error);
       toast({
         title: "Error",
-        description: "Failed to save contact. Please try again.",
+        description: "Failed to add contact. Please try again.",
         variant: "destructive",
       });
     } finally {
@@ -380,20 +420,36 @@ export default function Contacts() {
 
   const handleDeleteContact = async (contactId: string) => {
     try {
-      const { error } = await supabase
-        .from('contacts')
-        .delete()
-        .eq('id', contactId);
-
-      if (error) throw error;
-
-      toast({
-        title: "Contact Deleted",
-        description: "Contact has been removed.",
+      console.log('🗑️ Deleting contact with ID:', contactId);
+      
+      // Use the simplified delete function
+      const { data: result, error } = await (supabase as any).rpc('delete_contact_simple', {
+        p_user_contact_id: contactId
       });
-      loadContacts();
+
+      if (error) {
+        console.error('❌ Delete function error:', error);
+        throw error;
+      }
+
+      console.log('✅ Contact deleted via simplified function:', result);
+      
+      if (result?.success) {
+        toast({
+          title: "Contact Deleted",
+          description: result.message || "Contact has been removed.",
+        });
+        loadContacts();
+      } else {
+        toast({
+          title: "Delete Failed",
+          description: result?.error || "Failed to delete contact.",
+          variant: "destructive",
+        });
+      }
+
     } catch (error) {
-      console.error('Error deleting contact:', error);
+      console.error('❌ Error deleting contact:', error);
       toast({
         title: "Error",
         description: "Failed to delete contact. Please try again.",
@@ -822,6 +878,8 @@ export default function Contacts() {
                                 Primary
                               </Badge>
                             )}
+                            {/* Enhanced Status Badge */}
+                            <ContactStatusBadge contact={contact} />
                           </div>
                           
                           {contact.relationship && (
@@ -986,6 +1044,13 @@ export default function Contacts() {
                           <Badge variant="outline" className="text-xs border-blue-300 text-blue-700 dark:border-blue-700 dark:text-blue-300">
                             Regular
                           </Badge>
+                          {/* User Status Badge */}
+                          {contact.is_registered_user && (
+                            <Badge variant="outline" className="text-xs text-green-600 border-green-300 bg-green-50 dark:bg-green-950/20 dark:text-green-400 dark:border-green-600">
+                              <UserCheck className="h-3 w-3 mr-1" />
+                              Registered User
+                            </Badge>
+                          )}
                         </div>
                         
                         {contact.relationship && (

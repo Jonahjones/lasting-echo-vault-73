@@ -14,9 +14,21 @@ import { VideoPreview } from "@/components/admin/VideoPreview";
 import { VideoThumbnailPreview } from "@/components/admin/VideoThumbnailPreview";
 import { ConfigurationPanel } from "@/components/admin/ConfigurationPanel";
 import { CategoryManagement } from "@/components/admin/CategoryManagement";
+import { EmailTestPanel } from "@/components/admin/EmailTestPanel";
+import { ContactDiagnostics } from "@/components/admin/ContactDiagnostics";
+import { ContactEmailValidator } from "@/components/admin/ContactEmailValidator";
+import { EmailVerificationDiagnostics } from "@/components/admin/EmailVerificationDiagnostics";
+import { TrustedContactDebugger } from "@/components/admin/TrustedContactDebugger";
+import { TrustedContactSystemDebugger } from "@/components/admin/TrustedContactSystemDebugger";
+import { InvitationChecker } from "@/components/admin/InvitationChecker";
+import { SchemaMigrationTool } from "@/components/admin/SchemaMigrationTool";
+import { GoogleSSOProfileFixer } from "@/components/admin/GoogleSSOProfileFixer";
+import { RelationshipMapper } from "@/components/admin/RelationshipMapper";
+import { SSOUserContactsDiagnostic } from "@/components/admin/SSOUserContactsDiagnostic";
 import { useAuth } from "@/contexts/AuthContext";
 import { useRealtime } from "@/contexts/RealtimeContext";
 import { EFFECTIVE_TIMING } from "@/config/timing";
+import { TrustedContactInvitationTest } from "@/components/admin/TrustedContactInvitationTest";
 
 interface AdminVideo {
   id: string;
@@ -43,7 +55,7 @@ export default function Admin() {
   const [searchTerm, setSearchTerm] = useState("");
   const [loading, setLoading] = useState(false);
   const [lastActivity, setLastActivity] = useState(Date.now());
-  const [activeTab, setActiveTab] = useState<'videos' | 'configuration'>('videos');
+  const [activeTab, setActiveTab] = useState<'videos' | 'configuration' | 'email-test' | 'contact-diagnostics' | 'email-validation' | 'signup-verification' | 'trusted-debug' | 'invitation-checker' | 'sso-fixer' | 'sso-diagnostic' | 'relationship-mapper' | 'schema-migration' | 'trusted-invitation-test'>('videos');
   
   // View mode state with localStorage persistence
   const [viewMode, setViewMode] = useState<'grid' | 'list'>(() => {
@@ -541,7 +553,7 @@ export default function Admin() {
       <div className="container mx-auto px-4 sm:px-6 py-6 sm:py-8">
         {/* Navigation Tabs */}
         <div className="mb-6 sm:mb-8">
-          <div className="flex space-x-1 bg-muted p-1 rounded-lg w-fit">
+          <div className="flex flex-wrap gap-1 bg-muted p-1 rounded-lg w-full max-w-fit">
             <button
               onClick={() => setActiveTab('videos')}
               className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
@@ -561,6 +573,116 @@ export default function Admin() {
               }`}
             >
               System Configuration
+            </button>
+            <button
+              onClick={() => setActiveTab('email-test')}
+              className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+                activeTab === 'email-test' 
+                  ? 'bg-background text-foreground shadow-sm' 
+                  : 'text-muted-foreground hover:text-foreground'
+              }`}
+            >
+              Email Testing
+            </button>
+            <button
+              onClick={() => setActiveTab('contact-diagnostics')}
+              className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+                activeTab === 'contact-diagnostics' 
+                  ? 'bg-background text-foreground shadow-sm' 
+                  : 'text-muted-foreground hover:text-foreground'
+              }`}
+            >
+              Contact Diagnostics
+            </button>
+            <button
+              onClick={() => setActiveTab('email-validation')}
+              className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+                activeTab === 'email-validation' 
+                  ? 'bg-background text-foreground shadow-sm' 
+                  : 'text-muted-foreground hover:text-foreground'
+              }`}
+            >
+              Email Validation
+            </button>
+            <button
+              onClick={() => setActiveTab('signup-verification')}
+              className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+                activeTab === 'signup-verification' 
+                  ? 'bg-background text-foreground shadow-sm' 
+                  : 'text-muted-foreground hover:text-foreground'
+              }`}
+            >
+              Signup Verification
+            </button>
+            <button
+              onClick={() => setActiveTab('trusted-debug')}
+              className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+                activeTab === 'trusted-debug' 
+                  ? 'bg-background text-foreground shadow-sm' 
+                  : 'text-muted-foreground hover:text-foreground'
+              }`}
+            >
+              Trusted Debug
+            </button>
+            <button
+              onClick={() => setActiveTab('invitation-checker')}
+              className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+                activeTab === 'invitation-checker' 
+                  ? 'bg-background text-foreground shadow-sm' 
+                  : 'text-muted-foreground hover:text-foreground'
+              }`}
+            >
+              Invitation Checker
+            </button>
+            <button
+              onClick={() => setActiveTab('sso-fixer')}
+              className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+                activeTab === 'sso-fixer' 
+                  ? 'bg-background text-foreground shadow-sm' 
+                  : 'text-muted-foreground hover:text-foreground'
+              }`}
+            >
+              SSO Profile Fix
+            </button>
+            <button
+              onClick={() => setActiveTab('sso-diagnostic')}
+              className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+                activeTab === 'sso-diagnostic' 
+                  ? 'bg-background text-foreground shadow-sm' 
+                  : 'text-muted-foreground hover:text-foreground'
+              }`}
+            >
+              SSO Contact Debug
+            </button>
+            <button
+              onClick={() => setActiveTab('relationship-mapper')}
+              className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+                activeTab === 'relationship-mapper' 
+                  ? 'bg-background text-foreground shadow-sm' 
+                  : 'text-muted-foreground hover:text-foreground'
+              }`}
+            >
+              Relationship Fix
+            </button>
+            <button
+              onClick={() => setActiveTab('schema-migration')}
+              className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+                activeTab === 'schema-migration' 
+                  ? 'bg-background text-foreground shadow-sm' 
+                  : 'text-muted-foreground hover:text-foreground'
+              }`}
+            >
+              Schema Migration
+            </button>
+            <button
+              onClick={() => setActiveTab('trusted-invitation-test')}
+              className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+                activeTab === 'trusted-invitation-test' 
+                  ? 'bg-background text-foreground shadow-sm' 
+                  : 'text-muted-foreground hover:text-foreground'
+              }`}
+            >
+              Trusted Invitation Test
             </button>
           </div>
         </div>
@@ -845,6 +967,50 @@ export default function Admin() {
 
         {activeTab === 'configuration' && (
           <ConfigurationPanel />
+        )}
+
+        {activeTab === 'email-test' && (
+          <EmailTestPanel />
+        )}
+
+        {activeTab === 'contact-diagnostics' && (
+          <ContactDiagnostics />
+        )}
+
+        {activeTab === 'email-validation' && (
+          <ContactEmailValidator />
+        )}
+
+        {activeTab === 'signup-verification' && (
+          <EmailVerificationDiagnostics />
+        )}
+
+        {activeTab === 'trusted-debug' && (
+          <TrustedContactSystemDebugger />
+        )}
+
+        {activeTab === 'invitation-checker' && (
+          <InvitationChecker />
+        )}
+
+        {activeTab === 'sso-fixer' && (
+          <GoogleSSOProfileFixer />
+        )}
+
+        {activeTab === 'sso-diagnostic' && (
+          <SSOUserContactsDiagnostic />
+        )}
+
+        {activeTab === 'relationship-mapper' && (
+          <RelationshipMapper />
+        )}
+
+        {activeTab === 'schema-migration' && (
+          <SchemaMigrationTool />
+        )}
+
+        {activeTab === 'trusted-invitation-test' && (
+          <TrustedContactInvitationTest />
         )}
       </div>
     </div>

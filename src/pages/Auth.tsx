@@ -14,6 +14,8 @@ export default function Auth() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [showResendVerification, setShowResendVerification] = useState(false);
+  const [isResendingVerification, setIsResendingVerification] = useState(false);
   const { login, signup, isLoading, user } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -101,6 +103,8 @@ export default function Auth() {
           title: "Account Created!",
           description: "Welcome to One Final Moment. Please check your email to verify your account.",
         });
+        // Show resend verification option
+        setShowResendVerification(true);
         // Navigation handled by Index.tsx - will show profile setup for new users
       }
     } catch (error) {
@@ -109,6 +113,51 @@ export default function Auth() {
         description: "Something went wrong. Please try again.",
         variant: "destructive"
       });
+    }
+  };
+
+  const handleResendVerification = async () => {
+    if (!email.trim()) {
+      toast({
+        title: "Email Required",
+        description: "Please enter your email address to resend verification.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsResendingVerification(true);
+
+    try {
+      const { error } = await supabase.auth.resend({
+        type: 'signup',
+        email: email.trim(),
+        options: {
+          emailRedirectTo: `${window.location.origin}/auth`
+        }
+      });
+
+      if (error) {
+        toast({
+          title: "Resend Failed",
+          description: error.message,
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: "Verification Email Sent",
+          description: `A new verification email has been sent to ${email}. Please check your inbox and spam folder.`,
+          variant: "default",
+        });
+      }
+    } catch (error: any) {
+      toast({
+        title: "Resend Error",
+        description: error.message || 'Failed to resend verification email.',
+        variant: "destructive",
+      });
+    } finally {
+      setIsResendingVerification(false);
     }
   };
 
@@ -246,22 +295,73 @@ export default function Auth() {
 
                 {/* Action Button */}
                 <Button 
-                  type="submit"
-                  size="lg" 
-                  variant="primary" 
-                  className="w-full h-16 text-lg font-medium mt-8 shadow-gentle hover:shadow-warm transition-all duration-300 hover:scale-[1.02]"
+                  type="submit" 
+                  className="w-full h-14 text-base bg-gradient-primary hover:shadow-gentle transition-all duration-300 font-medium"
                   disabled={isLoading}
                 >
                   {isLoading ? (
-                    "Please wait..."
+                    <div className="flex items-center justify-center space-x-2">
+                      <div className="w-5 h-5 border-2 border-primary-foreground/30 border-t-primary-foreground rounded-full animate-spin"></div>
+                      <span>Please wait...</span>
+                    </div>
                   ) : (
-                    <>
-                      {isLogin ? "Continue Your Journey" : "Begin Your Legacy"}
-                      <ArrowRight className="w-5 h-5 ml-2" />
-                    </>
+                    <div className="flex items-center justify-center space-x-2">
+                      <span>{isLogin ? "Continue Your Journey" : "Begin Your Legacy"}</span>
+                      <ArrowRight className="w-5 h-5" />
+                    </div>
                   )}
                 </Button>
               </form>
+
+              {/* Resend Verification Section */}
+              {showResendVerification && !isLogin && (
+                <div className="mt-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                  <div className="flex items-start gap-3">
+                    <Mail className="w-5 h-5 text-blue-600 mt-0.5 flex-shrink-0" />
+                    <div className="flex-1">
+                      <h4 className="text-sm font-medium text-blue-800 mb-1">
+                        Didn't receive your verification email?
+                      </h4>
+                      <p className="text-xs text-blue-600 mb-3">
+                        Check your spam folder, or we can send you a new verification email.
+                      </p>
+                      <Button
+                        onClick={handleResendVerification}
+                        disabled={isResendingVerification}
+                        variant="outline"
+                        size="sm"
+                        className="border-blue-300 text-blue-700 hover:bg-blue-100"
+                      >
+                        {isResendingVerification ? (
+                          <>
+                            <div className="w-3 h-3 border border-blue-600 border-t-transparent rounded-full animate-spin mr-2" />
+                            Sending...
+                          </>
+                        ) : (
+                          'Resend Verification Email'
+                        )}
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Toggle between login and signup */}
+              <div className="text-center mt-8">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsLogin(!isLogin);
+                    setShowResendVerification(false); // Hide resend when switching modes
+                  }}
+                  className="text-sm text-muted-foreground hover:text-foreground transition-colors font-light"
+                >
+                  {isLogin 
+                    ? "New here? Create your legacy account" 
+                    : "Already preserving memories? Sign in"
+                  }
+                </button>
+              </div>
             </CardContent>
           </Card>
 

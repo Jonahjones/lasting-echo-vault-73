@@ -1,37 +1,37 @@
-import { useState, useEffect } from "react";
-import { Button } from "@/components/ui/button";
+import { useState, useEffect, useCallback } from "react";
 import { Card, CardContent } from "@/components/ui/card";
-import { Lightbulb, Video, Shuffle, ArrowRight, Sparkles, Gift } from "lucide-react";
-import { useAuth } from "@/contexts/AuthContext";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Shuffle, Video, Clock, Sparkles } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { useAuth } from "@/contexts/AuthContext";
+import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 
-import { useToast } from "@/hooks/use-toast";
+interface CyclingPrompt {
+  id: number;
+  prompt_text: string;
+  interval_number: number;
+  next_change_at: string;
+}
 
 interface PromptOfTheDayProps {
   className?: string;
 }
-
-interface DailyPrompt {
-  id: string;
-  prompt_text: string;
-  date: string;
-}
-
-
 
 export function PromptOfTheDay({ className = "" }: PromptOfTheDayProps) {
   const { user } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
   
-  const [todayPrompt, setTodayPrompt] = useState<DailyPrompt | null>(null);
+  const [currentPrompt, setCurrentPrompt] = useState<CyclingPrompt | null>(null);
   const [alternativePrompt, setAlternativePrompt] = useState<string | null>(null);
   const [xpForPrompt, setXpForPrompt] = useState<number>(15);
   const [isLoading, setIsLoading] = useState(true);
   const [showCelebration, setShowCelebration] = useState(false);
   const [isFirstVideoCelebration, setIsFirstVideoCelebration] = useState(false);
   const [isButtonAnimating, setIsButtonAnimating] = useState(false);
+  const [nextUpdateIn, setNextUpdateIn] = useState<number>(0);
 
   // Alternative prompts for variety
   const alternativePrompts = [
@@ -47,12 +47,77 @@ export function PromptOfTheDay({ className = "" }: PromptOfTheDayProps) {
     "Describe a moment of unexpected kindness you experienced."
   ];
 
+  // Load current cycling prompt
+  const loadCurrentPrompt = useCallback(async () => {
+    try {
+      const { data, error } = await (supabase as any).rpc('get_current_cycling_prompt').single();
+
+      if (error) {
+        console.error('Error loading cycling prompt:', error);
+        // Fallback to a default prompt if none exists
+        setCurrentPrompt({
+          id: 0,
+          prompt_text: "What's something you're grateful for today?",
+          interval_number: 0,
+          next_change_at: new Date(Date.now() + 5 * 60 * 1000).toISOString()
+        });
+      } else if (data) {
+        setCurrentPrompt(data);
+        
+        // Show toast when prompt changes (except on initial load)
+        if (!isLoading && currentPrompt && data.id !== currentPrompt.id) {
+          toast({
+            title: "✨ Fresh prompt loaded!",
+            description: "A new inspiring prompt is ready for you to record!",
+            duration: 4000,
+          });
+        }
+      }
+    } catch (error) {
+      console.error('Error loading prompt:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  }, [isLoading, currentPrompt, toast]);
+
+  // Calculate countdown to next prompt
+  const updateCountdown = useCallback(() => {
+    if (!currentPrompt?.next_change_at) return;
+    
+    const nextChange = new Date(currentPrompt.next_change_at).getTime();
+    const now = Date.now();
+    const secondsLeft = Math.max(0, Math.floor((nextChange - now) / 1000));
+    
+    setNextUpdateIn(secondsLeft);
+  }, [currentPrompt?.next_change_at]);
+
   useEffect(() => {
     if (user) {
-      loadTodayPrompt();
+      loadCurrentPrompt();
       loadXPConfig();
     }
-  }, [user]);
+  }, [user, loadCurrentPrompt]);
+
+  // Set up 5-minute polling for new prompts
+  useEffect(() => {
+    if (!user) return;
+
+    const interval = setInterval(() => {
+      loadCurrentPrompt();
+    }, 5 * 60 * 1000); // Poll every 5 minutes
+
+    return () => clearInterval(interval);
+  }, [user, loadCurrentPrompt]);
+
+  // Set up countdown timer
+  useEffect(() => {
+    if (!currentPrompt?.next_change_at) return;
+
+    const interval = setInterval(updateCountdown, 1000);
+    updateCountdown(); // Initial call
+
+    return () => clearInterval(interval);
+  }, [currentPrompt?.next_change_at, updateCountdown]);
 
   // Check if user just recorded (simple check for celebration)
   useEffect(() => {
@@ -76,35 +141,6 @@ export function PromptOfTheDay({ className = "" }: PromptOfTheDayProps) {
       }
     }
   }, []);
-
-  const loadTodayPrompt = async () => {
-    try {
-      const today = new Date().toISOString().split('T')[0];
-      const { data, error } = await supabase
-        .from('daily_prompts')
-        .select('*')
-        .eq('date', today)
-        .single();
-
-      if (error) {
-        console.error('Error loading today\'s prompt:', error);
-        // Fallback to a default prompt if none exists for today
-        setTodayPrompt({
-          id: 'default',
-          prompt_text: "What's something you're grateful for today?",
-          date: today
-        });
-      } else {
-        setTodayPrompt(data);
-      }
-    } catch (error) {
-      console.error('Error loading prompt:', error);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-
 
   const loadXPConfig = async () => {
     try {
@@ -138,13 +174,13 @@ export function PromptOfTheDay({ className = "" }: PromptOfTheDayProps) {
     setIsButtonAnimating(true);
     setTimeout(() => setIsButtonAnimating(false), 600);
 
-    const promptToUse = alternativePrompt || todayPrompt?.prompt_text;
+    const promptToUse = alternativePrompt || currentPrompt?.prompt_text;
     
     if (promptToUse) {
       navigate('/record', { 
         state: { 
           prompt: promptToUse,
-          isPromptOfTheDay: !alternativePrompt // true only if using today's prompt, not alternative
+          isPromptOfTheDay: !alternativePrompt // true only if using cycling prompt, not alternative
         } 
       });
     } else {
@@ -152,8 +188,14 @@ export function PromptOfTheDay({ className = "" }: PromptOfTheDayProps) {
     }
   };
 
+  // Format countdown display
+  const formatCountdown = (seconds: number) => {
+    const minutes = Math.floor(seconds / 60);
+    const remainingSeconds = seconds % 60;
+    return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
+  };
 
-  const currentPrompt = alternativePrompt || todayPrompt?.prompt_text;
+  const currentPromptText = alternativePrompt || currentPrompt?.prompt_text;
 
   if (isLoading) {
     return (
@@ -170,68 +212,74 @@ export function PromptOfTheDay({ className = "" }: PromptOfTheDayProps) {
   }
 
   return (
-    <Card className={`shadow-sm border bg-white dark:bg-card hover:shadow-md transition-shadow duration-300 ${className}`}>
-      <CardContent className="p-3 lg:p-4 space-y-2 lg:space-y-3">
-        {/* Celebration Banner */}
-        {showCelebration && (
-          <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg p-3 animate-in slide-in-from-top duration-500">
-            <div className="flex items-center justify-center gap-2 text-green-800 dark:text-green-200">
-              <Gift className="w-4 h-4 animate-bounce" />
-              <span className="font-semibold text-sm">
-                {isFirstVideoCelebration ? `+${xpForPrompt * 2} XP! Welcome! 🎉` : `+${xpForPrompt} XP! Great job! 🎉`}
+    <Card className={`shadow-sm border bg-white dark:bg-card transition-all duration-500 ${showCelebration ? 'ring-2 ring-primary shadow-lg scale-[1.02]' : ''} ${className}`}>
+      <CardContent className="p-3 lg:p-4 space-y-3 lg:space-y-4">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1.5">
+              <Sparkles className="h-4 w-4 text-primary" />
+              <span className="text-sm font-medium text-muted-foreground">
+                {alternativePrompt ? "Alternative Prompt" : "Today's Memory Prompt"}
               </span>
-              <Sparkles className="w-4 h-4 animate-pulse" />
+            </div>
+            {!alternativePrompt && currentPrompt && nextUpdateIn > 0 && (
+              <Badge variant="secondary" className="text-xs">
+                <Clock className="h-3 w-3 mr-1" />
+                New in {formatCountdown(nextUpdateIn)}
+              </Badge>
+            )}
+          </div>
+          <Badge variant="outline" className="text-xs">
+            +{xpForPrompt} XP
+          </Badge>
+        </div>
+
+        {showCelebration && (
+          <div className="bg-gradient-to-r from-primary/10 to-purple-500/10 border border-primary/20 rounded-lg p-3 animate-pulse">
+            <div className="flex items-center gap-2 text-primary">
+              <Sparkles className="h-4 w-4" />
+              <span className="text-sm font-medium">
+                {isFirstVideoCelebration 
+                  ? "🎉 Amazing! You've recorded your first memory! Keep building your legacy!" 
+                  : "✨ Great job! Your memory has been saved to your library!"}
+              </span>
             </div>
           </div>
         )}
 
-        {/* Header */}
-        <div className="flex items-center gap-2">
-          <div className="w-6 h-6 bg-amber-500 rounded-lg flex items-center justify-center">
-            <Lightbulb className="w-3 h-3 text-white" />
-          </div>
-          <h3 className="font-semibold text-gray-900 dark:text-gray-100 text-sm">
-            {alternativePrompt ? "Alternative Prompt" : "Today's Prompt"}
+        <div className="space-y-2 lg:space-y-3">
+          <h3 className="text-base lg:text-lg font-medium text-foreground leading-relaxed">
+            {currentPromptText || "Loading your inspiring prompt..."}
           </h3>
+          
+          <div className="flex flex-col sm:flex-row gap-2">
+            <Button 
+              onClick={handleRecordStory}
+              className={`flex-1 h-10 text-sm transition-all duration-300 ${
+                isButtonAnimating ? 'scale-95' : 'hover:scale-[1.02]'
+              }`}
+              disabled={!currentPromptText}
+            >
+              <Video className="mr-2 h-4 w-4" />
+              Record Your Story
+            </Button>
+            
+            <Button 
+              variant="outline" 
+              onClick={getRandomAlternativePrompt}
+              className="h-10 text-sm"
+            >
+              <Shuffle className="mr-2 h-4 w-4" />
+              Try Different
+            </Button>
+          </div>
         </div>
 
-        {/* Prompt Card */}
-        <div className="border rounded-lg p-3 bg-gray-50 dark:bg-gray-800/50 border-gray-200 dark:border-gray-700">
-          <p className="text-gray-800 dark:text-gray-200 text-sm font-medium leading-relaxed text-center">
-            "{currentPrompt}"
-          </p>
-        </div>
-
-        {/* Single Encouragement Line */}
-        <p className="text-center text-xs text-gray-600 dark:text-gray-400">
-          Record today's prompt to earn {xpForPrompt} XP!
-        </p>
-
-        {/* Main CTA Button */}
-        <Button
-          onClick={handleRecordStory}
-          size="lg"
-          className={`w-full h-12 text-base font-semibold bg-amber-600 hover:bg-amber-700 text-white shadow-md hover:shadow-lg transition-all duration-300 ${
-            isButtonAnimating ? 'animate-pulse scale-105' : 'hover:scale-[1.02]'
-          }`}
-          aria-label={`Record your response to today's prompt: ${currentPrompt}. You'll earn ${xpForPrompt} XP.`}
-        >
-          <Video className="w-4 h-4 mr-2" />
-          Record My Story
-          <ArrowRight className="w-4 h-4 ml-2" />
-        </Button>
-
-        {/* Subtle Secondary Link */}
-        <div className="flex justify-center pt-1">
-          <button
-            onClick={getRandomAlternativePrompt}
-            className="text-xs text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 transition-colors duration-200 flex items-center gap-1"
-            aria-label="Get a different writing prompt if this one doesn't inspire you"
-          >
-            <Shuffle className="w-3 h-3" />
-            See another prompt
-          </button>
-        </div>
+        {!alternativePrompt && currentPrompt && (
+          <div className="text-xs text-muted-foreground text-center">
+            Prompt #{currentPrompt.id} • Refreshes every 5 minutes
+          </div>
+        )}
       </CardContent>
     </Card>
   );

@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './AuthContext';
+import { useGamificationCelebration } from './GamificationCelebrationContext';
 
 export interface SavedVideo {
   id: string;
@@ -35,30 +36,26 @@ interface VideoLibraryContextType {
     scheduledDeliveryDate?: Date;
     sharedWithContacts?: string[];
     isPromptOfTheDay?: boolean;
+    shareMode?: 'regular' | 'trusted';
   }) => Promise<void>;
   updateVideo: (id: string, updates: Partial<SavedVideo>) => Promise<void>;
   deleteVideo: (id: string) => Promise<void>;
   loading: boolean;
 }
 
-// Helper function to check if a prompt matches today's daily prompt
+// Helper function to check if a prompt matches the current cycling prompt
 const isDailyPromptCompletion = async (prompt: string): Promise<boolean> => {
   try {
-    const today = new Date().toISOString().split('T')[0];
-    const { data: dailyPrompt } = await supabase
-      .from('daily_prompts')
-      .select('prompt_text')
-      .eq('date', today)
-      .single();
+    const { data: currentPrompt } = await (supabase as any).rpc('get_current_cycling_prompt').single();
 
-    return dailyPrompt && (
-      dailyPrompt.prompt_text === prompt ||
+    return currentPrompt && (
+      currentPrompt.prompt_text === prompt ||
       // Also check for partial matches as prompts may be modified slightly
-      prompt.includes(dailyPrompt.prompt_text) ||
-      dailyPrompt.prompt_text.includes(prompt)
+      prompt.includes(currentPrompt.prompt_text) ||
+      currentPrompt.prompt_text.includes(prompt)
     );
   } catch (error) {
-    console.error('Error checking daily prompt:', error);
+    console.error('Error checking cycling prompt:', error);
     return false;
   }
 };
@@ -70,9 +67,10 @@ export function VideoLibraryProvider({ children }: { children: React.ReactNode }
   const [totalStorageBytes, setTotalStorageBytes] = useState(0);
   const [loading, setLoading] = useState(true);
   const { user } = useAuth();
+  const { triggerXPAnimation } = useGamificationCelebration();
 
   // Storage limits - can be moved to a config later
-  const storageLimit = 3; // Free tier video count limit
+  const storageLimit = 5; // Free tier video count limit (updated from 3 to 5)
   const storageLimitGB = 2; // Free tier storage limit in GB
   const videoCount = videos.length;
   const storageUsed = totalStorageBytes / (1024 * 1024 * 1024); // Convert bytes to GB
@@ -152,6 +150,7 @@ export function VideoLibraryProvider({ children }: { children: React.ReactNode }
     scheduledDeliveryDate?: Date;
     sharedWithContacts?: string[];
     isPromptOfTheDay?: boolean;
+    shareMode?: 'regular' | 'trusted';
   }) => {
     if (!user) throw new Error('User not authenticated');
 
@@ -197,7 +196,8 @@ export function VideoLibraryProvider({ children }: { children: React.ReactNode }
           is_public: videoData.isPublic,
           category: videoData.category,
           scheduled_delivery_date: videoData.scheduledDeliveryDate?.toISOString(),
-          shared_with_contacts: videoData.sharedWithContacts || []
+          shared_with_contacts: videoData.sharedWithContacts || [],
+          share_mode: videoData.shareMode || 'regular'
         })
         .select()
         .single();
@@ -222,6 +222,8 @@ export function VideoLibraryProvider({ children }: { children: React.ReactNode }
           }
         });
         console.log('XP awarded for video creation');
+        // Trigger XP animation for video creation (10 XP)
+        triggerXPAnimation(10);
       } catch (xpError) {
         console.error('Error awarding XP for video creation:', xpError);
       }
@@ -237,8 +239,26 @@ export function VideoLibraryProvider({ children }: { children: React.ReactNode }
             }
           });
           console.log('✨ Bonus XP awarded for daily prompt completion');
+          // Trigger XP animation for daily prompt (15 XP)
+          triggerXPAnimation(15);
         } catch (xpError) {
           console.error('Error awarding daily prompt bonus XP:', xpError);
+        }
+      } else if (videoData.prompt) {
+        // This is an additional prompt beyond the daily prompt - award 5 XP
+        try {
+          await supabase.functions.invoke('award-xp', {
+            body: {
+              userId: user.id,
+              actionType: 'additional_prompt',
+              referenceId: data.id
+            }
+          });
+          console.log('🎯 XP awarded for additional prompt recording');
+          // Trigger XP animation for additional prompt (5 XP)
+          triggerXPAnimation(5);
+        } catch (xpError) {
+          console.error('Error awarding additional prompt XP:', xpError);
         }
       }
 
@@ -253,6 +273,8 @@ export function VideoLibraryProvider({ children }: { children: React.ReactNode }
             }
           });
           console.log('XP awarded for making video public');
+          // Trigger XP animation for public video (20 XP)
+          triggerXPAnimation(20);
         } catch (xpError) {
           console.error('Error awarding XP for public video:', xpError);
         }

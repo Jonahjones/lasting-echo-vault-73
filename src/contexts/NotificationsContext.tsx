@@ -6,7 +6,7 @@ import { useToast } from '@/hooks/use-toast';
 export interface Notification {
   id: string;
   user_id: string;
-  type: 'shared_video' | 'daily_prompt' | 'draft_reminder' | 'delivery_confirmation';
+  type: 'shared_video' | 'daily_prompt' | 'draft_reminder' | 'delivery_confirmation' | 'trusted_contact_added';
   title: string;
   message: string;
   data?: any;
@@ -16,10 +16,10 @@ export interface Notification {
 }
 
 export interface DailyPrompt {
-  id: string;
+  id: number;
   prompt_text: string;
-  date: string;
-  created_at: string;
+  interval_number: number;
+  next_change_at: string;
 }
 
 interface NotificationsContextType {
@@ -203,18 +203,12 @@ export function NotificationsProvider({ children }: { children: ReactNode }) {
 
   const getTodaysPrompt = async (): Promise<DailyPrompt | null> => {
     try {
-      const today = new Date().toISOString().split('T')[0];
-      
-      const { data, error } = await supabase
-        .from('daily_prompts')
-        .select('*')
-        .eq('date', today)
-        .maybeSingle();
+      const { data, error } = await (supabase as any).rpc('get_current_cycling_prompt').single();
 
       if (error) throw error;
       return data as DailyPrompt | null;
     } catch (error) {
-      console.error('Error fetching today\'s prompt:', error);
+      console.error('Error fetching current cycling prompt:', error);
       return null;
     }
   };

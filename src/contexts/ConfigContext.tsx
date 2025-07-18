@@ -140,7 +140,7 @@ interface ConfigContextType {
 // Default configuration fallbacks
 const defaultConfig: SystemConfiguration = {
   freeTierLimits: {
-    max_videos: 3,
+    max_videos: 5, // Updated from 3 to 5
     max_storage_gb: 2.0,
     max_video_duration_minutes: 5,
     max_file_size_mb: 100

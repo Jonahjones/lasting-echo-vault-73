@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
-import { ArrowLeft, Bell, BellOff, Video, MessageCircle, Calendar, Users, Trash2, CheckCircle, Clock, Heart, Sparkles } from 'lucide-react';
+import { ArrowLeft, Bell, BellOff, Video, MessageCircle, Calendar, Users, Trash2, CheckCircle, Clock, Heart, Sparkles, Shield } from 'lucide-react';
 import { useNotifications } from '@/contexts/NotificationsContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { formatDistanceToNow } from 'date-fns';
@@ -58,6 +58,9 @@ export default function Notifications() {
       case 'shared_video':
         navigate('/vault');
         break;
+      case 'trusted_contact_added':
+        navigate('/trusted-contact-center');
+        break;
       default:
         console.log('Unknown notification type:', notification.type);
     }
@@ -69,6 +72,7 @@ export default function Notifications() {
       case 'shared_video': return <Video className="w-5 h-5 text-primary" />;
       case 'draft_reminder': return <MessageCircle className="w-5 h-5 text-muted-foreground" />;
       case 'delivery_confirmation': return <CheckCircle className="w-5 h-5 text-green-600" />;
+      case 'trusted_contact_added': return <Shield className="w-5 h-5 text-purple-600" />;
       default: return <Bell className="w-5 h-5 text-muted-foreground" />;
     }
   };
@@ -80,6 +84,7 @@ export default function Notifications() {
       case 'shared_video': return 'bg-primary/5 border-primary/20';
       case 'draft_reminder': return 'bg-muted/50 border-border';
       case 'delivery_confirmation': return 'bg-green-50 border-green-200';
+      case 'trusted_contact_added': return 'bg-purple-50 border-purple-200';
       default: return 'bg-muted/20 border-border';
     }
   };
@@ -90,6 +95,7 @@ export default function Notifications() {
       case 'draft_reminder': return 'Record Now';
       case 'shared_video': return 'View Video';
       case 'delivery_confirmation': return 'View Details';
+      case 'trusted_contact_added': return 'Go to Trusted Contact Center';
       default: return 'View';
     }
   };
@@ -217,6 +223,7 @@ export default function Notifications() {
                       notification.type === 'daily_prompt' ? "bg-accent/10" :  
                       notification.type === 'shared_video' ? "bg-primary/10" :
                       notification.type === 'delivery_confirmation' ? "bg-green-100" :
+                      notification.type === 'trusted_contact_added' ? "bg-purple-100" :
                       "bg-muted"
                     )}>
                       {getNotificationIcon(notification.type)}

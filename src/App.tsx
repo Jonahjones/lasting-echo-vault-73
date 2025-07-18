@@ -3,7 +3,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
 import "@/lib/i18n"; // Initialize i18n
 import { AuthProvider } from "@/contexts/AuthContext";
 import { PricingProvider } from "@/contexts/PricingContext";
@@ -13,10 +13,12 @@ import { PromptsProvider } from "@/contexts/PromptsContext";
 import { VideoLibraryProvider } from "@/contexts/VideoLibraryContext";
 import { NotificationsProvider } from "@/contexts/NotificationsContext";
 import { RealtimeProvider } from "@/contexts/RealtimeContext";
+import { GamificationCelebrationProvider } from "@/contexts/GamificationCelebrationContext";
 import { BottomNavigation } from "@/components/BottomNavigation";
 import { MobileHeader } from "@/components/MobileHeader";
 import { ProfileSetup } from "@/components/ProfileSetup";
 import { FirstVideoPrompt } from "@/components/FirstVideoPrompt";
+import { XPAnimationToast } from "@/components/gamification/XPAnimationToast";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import Record from "./pages/Record";
@@ -27,9 +29,59 @@ import Profile from "./pages/Profile";
 import Admin from "./pages/Admin";
 import Notifications from "./pages/Notifications";
 import SharedWithMe from "./pages/SharedWithMe";
+import SocialFeed from "./pages/SocialFeed";
+import TrustedContactCenter from "./pages/TrustedContactCenter";
+import TrustedContactDashboard from "./pages/TrustedContactDashboard";
 import NotFound from "./pages/NotFound";
 import { useAuth } from "@/contexts/AuthContext";
 import { useState, useEffect } from "react";
+
+// Conditional Header Component - shows MobileHeader except on pages with custom headers
+function ConditionalHeader() {
+  const location = useLocation();
+  
+  // Pages that have their own custom headers and don't need MobileHeader
+  const pagesWithCustomHeaders = [
+    '/admin',           // Has admin-specific header
+    '/record',          // Has "Create Your Message" header
+    '/video-details',   // Has "Complete Your Message" header
+    '/notifications',   // Has "Notifications" header with back button
+    '/auth'             // Has auth-specific header
+  ];
+  
+  // Check if current path matches any page with custom header
+  const hasCustomHeader = pagesWithCustomHeaders.some(path => 
+    location.pathname.startsWith(path)
+  );
+  
+  if (hasCustomHeader) {
+    return null;
+  }
+  
+  return <MobileHeader />;
+}
+
+// Conditional Bottom Navigation - shows except on pages that don't need it
+function ConditionalBottomNavigation() {
+  const location = useLocation();
+  
+  // Pages that don't need bottom navigation
+  const pagesWithoutBottomNav = [
+    '/admin',           // Admin has its own navigation
+    '/auth'             // Auth pages don't need bottom nav
+  ];
+  
+  // Check if current path matches any page without bottom nav
+  const needsBottomNav = !pagesWithoutBottomNav.some(path => 
+    location.pathname.startsWith(path)
+  );
+  
+  if (!needsBottomNav) {
+    return null;
+  }
+  
+  return <BottomNavigation />;
+}
 
 function AppRoutes() {
   const { user, profile, isLoading, error, retry } = useAuth();
@@ -166,7 +218,7 @@ function AppRoutes() {
   console.log('✅ App.tsx: Loading complete, showing normal app routes');
   return (
     <>
-      <MobileHeader />
+      <ConditionalHeader />
       <Routes>
         <Route path="/" element={<Index />} />
         <Route path="/record" element={<Record />} />
@@ -174,12 +226,15 @@ function AppRoutes() {
         <Route path="/contacts" element={<Contacts />} />
         <Route path="/library" element={<Library />} />
         <Route path="/shared-with-me" element={<SharedWithMe />} />
+        <Route path="/social-feed" element={<SocialFeed />} />
+        <Route path="/trusted-contact-center" element={<TrustedContactCenter />} />
+        <Route path="/trusted-contact-dashboard" element={<TrustedContactDashboard />} />
         <Route path="/notifications" element={<Notifications />} />
         <Route path="/profile" element={<Profile />} />
         <Route path="/admin" element={<Admin />} />
         <Route path="*" element={<NotFound />} />
       </Routes>
-      <BottomNavigation />
+      <ConditionalBottomNavigation />
     </>
   );
 }
@@ -193,25 +248,27 @@ const App = () => (
         <CategoriesProvider>
           <PromptsProvider>
             <PricingProvider>
-            <RealtimeProvider>
-              <VideoLibraryProvider>
-                <NotificationsProvider>
-              <TooltipProvider>
-                <Toaster />
-                <Sonner />
-                <BrowserRouter>
-                  <div className="min-h-screen bg-background">
-                    <Routes>
-                      <Route path="/admin" element={<Admin />} />
-                      <Route path="*" element={<AppRoutes />} />
-                    </Routes>
-                  </div>
-                </BrowserRouter>
-              </TooltipProvider>
-              </NotificationsProvider>
-            </VideoLibraryProvider>
-          </RealtimeProvider>
-          </PricingProvider>
+              <RealtimeProvider>
+                <GamificationCelebrationProvider>
+                  <VideoLibraryProvider>
+                    <NotificationsProvider>
+                      <TooltipProvider>
+                        <Toaster />
+                        <Sonner />
+                        <XPAnimationToast />
+                        <BrowserRouter>
+                          <div className="min-h-screen bg-background">
+                            <Routes>
+                              <Route path="*" element={<AppRoutes />} />
+                            </Routes>
+                          </div>
+                        </BrowserRouter>
+                      </TooltipProvider>
+                    </NotificationsProvider>
+                  </VideoLibraryProvider>
+                </GamificationCelebrationProvider>
+              </RealtimeProvider>
+            </PricingProvider>
           </PromptsProvider>
         </CategoriesProvider>
       </ConfigProvider>

@@ -1,14 +1,18 @@
 import { Badge } from '@/components/ui/badge';
 import { useGamification } from '@/hooks/useGamification';
+import { LevelInfoPopover } from './LevelInfoPopover';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface LevelBadgeProps {
   size?: 'sm' | 'md' | 'lg';
   showXP?: boolean;
   className?: string;
+  clickable?: boolean;
 }
 
-export function LevelBadge({ size = 'md', showXP = false, className = '' }: LevelBadgeProps) {
+export function LevelBadge({ size = 'md', showXP = false, className = '', clickable = true }: LevelBadgeProps) {
   const { userGamification, getCurrentBadge, loading } = useGamification();
+  const { user, profile } = useAuth();
 
   if (loading || !userGamification) {
     return (
@@ -28,8 +32,8 @@ export function LevelBadge({ size = 'md', showXP = false, className = '' }: Leve
     );
   }
 
-  return (
-    <div className={`flex items-center space-x-2 ${className}`}>
+  const badgeContent = (
+    <div className={`flex items-center space-x-2 ${className} ${clickable ? 'cursor-pointer hover:opacity-80 transition-opacity' : ''}`}>
       <div 
         className={`flex items-center justify-center rounded-full ${sizeClasses}`}
         style={{ backgroundColor: badge.color + '20', border: `2px solid ${badge.color}` }}
@@ -58,6 +62,22 @@ export function LevelBadge({ size = 'md', showXP = false, className = '' }: Leve
       </div>
     </div>
   );
+
+  if (clickable && user) {
+    const displayName = profile?.display_name || 
+      (profile?.first_name ? `${profile.first_name} ${profile.last_name || ''}`.trim() : '') ||
+      user?.email || 'You';
+
+    return (
+      <LevelInfoPopover 
+        userId={user.id} 
+        userName={displayName}
+        trigger={badgeContent}
+      />
+    );
+  }
+
+  return badgeContent;
 }
 
 function getSizeClasses(size: 'sm' | 'md' | 'lg'): string {

@@ -2,7 +2,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { CheckCircle, Users, Globe, Lock, Calendar, Save, Send, Clock } from "lucide-react";
+import { CheckCircle, Users, Globe, Lock, Calendar, Save, Send, Clock, Shield } from "lucide-react";
 import { format } from "date-fns";
 import { DeliveryOption } from "./DeliveryScheduler";
 
@@ -28,6 +28,11 @@ interface VideoConfirmationModalProps {
   selectedContacts: Contact[];
   deliveryOption: DeliveryOption;
   scheduledDate?: Date;
+  
+  // New delivery mode props
+  shareMode?: 'regular' | 'trusted';
+  regularContactsCount?: number;
+  trustedContactsCount?: number;
 }
 
 export function VideoConfirmationModal({
@@ -41,65 +46,49 @@ export function VideoConfirmationModal({
   isPublic,
   selectedContacts,
   deliveryOption,
-  scheduledDate
+  scheduledDate,
+  shareMode = 'regular',
+  regularContactsCount = 0,
+  trustedContactsCount = 0
 }: VideoConfirmationModalProps) {
   const getActionText = () => {
+    if (shareMode === 'trusted') {
+      return 'Save for Trusted Contact Release';
+    }
+    
     switch (deliveryOption) {
       case 'send-now':
         return isPublic ? 'Publish Video' : selectedContacts.length > 0 ? 'Send Video' : 'Save Video';
       case 'schedule':
-        return isPublic ? 'Schedule Publication' : 'Schedule Delivery';
+        return 'Schedule Video';
       case 'save-only':
+      default:
         return 'Save Video';
-      default:
-        return 'Confirm';
-    }
-  };
-
-  const getActionIcon = () => {
-    switch (deliveryOption) {
-      case 'send-now':
-        return isPublic ? <Globe className="w-4 h-4" /> : selectedContacts.length > 0 ? <Send className="w-4 h-4" /> : <Save className="w-4 h-4" />;
-      case 'schedule':
-        return <Calendar className="w-4 h-4" />;
-      case 'save-only':
-        return <Save className="w-4 h-4" />;
-      default:
-        return <CheckCircle className="w-4 h-4" />;
     }
   };
 
   const getDeliveryDescription = () => {
+    if (shareMode === 'trusted') {
+      return `Will be released by ${trustedContactsCount} trusted contact${trustedContactsCount !== 1 ? 's' : ''} upon confirmation`;
+    }
+    
+    if (shareMode === 'regular') {
+      return `Will be sent immediately to ${regularContactsCount} regular contact${regularContactsCount !== 1 ? 's' : ''}`;
+    }
+    
+    // Fallback for old delivery options
     switch (deliveryOption) {
       case 'send-now':
-        if (isPublic) {
-          return "Your video will be published to the public feed immediately and visible to all users.";
-        }
-        if (selectedContacts.length === 0) {
-          return "Your video will be saved to your private library.";
-        }
-        return `Your video will be sent immediately to ${selectedContacts.length} contact${selectedContacts.length === 1 ? '' : 's'}.`;
-      
+        return isPublic 
+          ? 'Your video will be published to the public feed immediately'
+          : `Your video will be sent to ${selectedContacts.length} selected contact${selectedContacts.length !== 1 ? 's' : ''} immediately`;
       case 'schedule':
-        if (isPublic) {
-          return scheduledDate ? 
-            `Your video will be automatically published to the public feed on ${format(scheduledDate, "PPPP")}.` :
-            "Please select a date for publication.";
-        }
-        if (selectedContacts.length === 0) {
-          return scheduledDate ?
-            `Your video will remain private in your library until ${format(scheduledDate, "PPPP")}.` :
-            "Please select a date for availability.";
-        }
-        return scheduledDate ?
-          `Your video will be automatically sent to ${selectedContacts.length} contact${selectedContacts.length === 1 ? '' : 's'} on ${format(scheduledDate, "PPPP")}.` :
-          "Please select a delivery date.";
-      
+        return scheduledDate 
+          ? `Your video will be sent on ${format(scheduledDate, 'MMMM d, yyyy')} at ${format(scheduledDate, 'h:mm a')}`
+          : 'Your video will be sent at the scheduled time';
       case 'save-only':
-        return "Your video will be saved privately to your library. You can share it later from your video management page.";
-      
       default:
-        return "";
+        return 'Your video will be saved to your library only';
     }
   };
 
@@ -130,42 +119,36 @@ export function VideoConfirmationModal({
 
           <Separator />
 
-          {/* Privacy & Audience */}
+          {/* Privacy & Delivery Mode */}
           <div>
             <h4 className="font-medium text-sm text-foreground mb-2 flex items-center space-x-2">
-              {isPublic ? <Globe className="w-4 h-4" /> : <Lock className="w-4 h-4" />}
-              <span>Privacy & Audience</span>
+              {shareMode === 'trusted' ? <Shield className="w-4 h-4" /> : <Users className="w-4 h-4" />}
+              <span>Delivery Mode</span>
             </h4>
             <div className="space-y-2">
               <div className="flex items-center space-x-2">
-                <Badge variant={isPublic ? "default" : "secondary"}>
-                  {isPublic ? "Public" : "Private"}
+                <Badge variant={shareMode === 'trusted' ? "default" : "secondary"}>
+                  {shareMode === 'trusted' ? "Trusted Contact Release" : "Immediate Sharing"}
                 </Badge>
-                <span className="text-sm text-muted-foreground">
-                  {isPublic ? "Visible to everyone" : "Only visible to selected contacts"}
-                </span>
               </div>
               
-              {!isPublic && selectedContacts.length > 0 && (
-                <div>
-                  <p className="text-sm font-medium text-foreground mb-1">
-                    Recipients ({selectedContacts.length}):
-                  </p>
-                  <div className="flex flex-wrap gap-1">
-                    {selectedContacts.map((contact) => (
-                      <Badge key={contact.id} variant="outline" className="text-xs">
-                        {contact.full_name}
-                      </Badge>
-                    ))}
-                  </div>
-                </div>
-              )}
-              
-              {!isPublic && selectedContacts.length === 0 && (
+              <div className="p-3 bg-muted/50 rounded-lg">
                 <p className="text-sm text-muted-foreground">
-                  No contacts selected - video will be private to you only
+                  {getDeliveryDescription()}
                 </p>
-              )}
+              </div>
+              
+              {/* Contact counts */}
+              <div className="flex items-center space-x-4 text-sm">
+                <div className="flex items-center space-x-1">
+                  <Users className="w-3 h-3 text-muted-foreground" />
+                  <span className="text-muted-foreground">Regular: {regularContactsCount}</span>
+                </div>
+                <div className="flex items-center space-x-1">
+                  <Shield className="w-3 h-3 text-muted-foreground" />
+                  <span className="text-muted-foreground">Trusted: {trustedContactsCount}</span>
+                </div>
+              </div>
             </div>
           </div>
 
@@ -207,8 +190,12 @@ export function VideoConfirmationModal({
                 </>
               ) : (
                 <>
-                  {getActionIcon()}
-                  <span className="ml-2">{getActionText()}</span>
+                  {shareMode === 'trusted' ? (
+                    <Shield className="w-4 h-4 mr-2" />
+                  ) : (
+                    <Send className="w-4 h-4 mr-2" />
+                  )}
+                  {getActionText()}
                 </>
               )}
             </Button>

@@ -1,4 +1,4 @@
-import { Heart, LogOut, User, Users, Video, Library, Menu } from "lucide-react";
+import { Heart, LogOut, User, Users, Video, Library, Menu, ShieldCheck, Inbox } from "lucide-react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -7,6 +7,8 @@ import { Badge } from "@/components/ui/badge";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { useAuth } from "@/contexts/AuthContext";
 import { useGamification } from "@/hooks/useGamification";
+import { useTrustedContactStatus } from "@/hooks/useTrustedContactStatus";
+import { LevelDropdown } from "@/components/gamification/LevelDropdown";
 
 // Compact User Info Component
 interface CompactUserInfoProps {
@@ -18,23 +20,28 @@ interface CompactUserInfoProps {
 
 function CompactUserInfo({ user, profile, displayName, onLogout }: CompactUserInfoProps) {
   const { userGamification, getCurrentBadge, loading } = useGamification();
+  const { 
+    isTrustedContact, 
+    isLoading: trustedContactLoading, 
+    trustedRelationships, 
+    refreshStatus
+  } = useTrustedContactStatus();
+
+
 
   const userInitials = profile?.display_name?.[0] || profile?.first_name?.[0] || user?.email?.[0] || 'U';
   const badge = getCurrentBadge();
   const currentLevel = userGamification?.current_level || 1;
 
-  // Create tooltip content with user info and level description
-  const tooltipContent = (
+
+
+  // Create tooltip content with user info for avatar
+  const avatarTooltipContent = (
     <div className="text-center space-y-1">
       <p className="font-medium">{displayName}</p>
       <p className="text-xs text-muted-foreground">
-        Level {currentLevel} • {userGamification?.total_xp?.toLocaleString() || 0} XP
+        {user?.email}
       </p>
-      {badge && (
-        <p className="text-xs" style={{ color: badge.color }}>
-          {badge.name}
-        </p>
-      )}
     </div>
   );
 
@@ -47,30 +54,21 @@ function CompactUserInfo({ user, profile, displayName, onLogout }: CompactUserIn
 
       {/* Level Badge + Avatar Group */}
       <div className="flex items-center space-x-2">
-        {/* Level Badge - positioned to the left of avatar */}
+        {/* Clickable Level Badge - positioned to the left of avatar */}
         {!loading && (
-          <TooltipProvider>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <div className="relative z-10">
-                  <Badge 
-                    variant="secondary" 
-                    className="h-6 px-2 text-xs font-semibold rounded-full border-2 border-background shadow-sm"
-                    style={{ 
-                      backgroundColor: badge?.color ? `${badge.color}15` : undefined,
-                      borderColor: 'hsl(var(--background))',
-                      color: badge?.color || 'hsl(var(--foreground))'
-                    }}
-                  >
-                    Lvl {currentLevel}
-                  </Badge>
-                </div>
-              </TooltipTrigger>
-              <TooltipContent side="bottom" className="bg-card border-border">
-                {tooltipContent}
-              </TooltipContent>
-            </Tooltip>
-          </TooltipProvider>
+          <LevelDropdown>
+            <Badge 
+              variant="secondary" 
+              className="h-6 px-2 text-xs font-semibold rounded-full border-2 border-background shadow-sm hover:shadow-md transition-all duration-200 cursor-pointer hover:scale-105"
+              style={{ 
+                backgroundColor: badge?.color ? `${badge.color}15` : undefined,
+                borderColor: 'hsl(var(--background))',
+                color: badge?.color || 'hsl(var(--foreground))'
+              }}
+            >
+              Lvl {currentLevel}
+            </Badge>
+          </LevelDropdown>
         )}
 
         {/* Avatar with Menu Badge Overlay */}
@@ -86,7 +84,7 @@ function CompactUserInfo({ user, profile, displayName, onLogout }: CompactUserIn
                 </Avatar>
               </TooltipTrigger>
               <TooltipContent side="bottom" className="bg-card border-border">
-                {tooltipContent}
+                {avatarTooltipContent}
               </TooltipContent>
             </Tooltip>
           </TooltipProvider>
@@ -125,6 +123,28 @@ function CompactUserInfo({ user, profile, displayName, onLogout }: CompactUserIn
                   <span>Contacts</span>
                 </Link>
               </DropdownMenuItem>
+              
+              <DropdownMenuItem asChild>
+                <Link to="/shared-with-me" className="flex items-center cursor-pointer">
+                  <Inbox className="w-4 h-4 mr-3" />
+                  <span>Shared</span>
+                </Link>
+              </DropdownMenuItem>
+              
+              {/* Trusted Contact Center - Always Available */}
+              <DropdownMenuItem asChild>
+                <Link 
+                  to="/trusted-contact-center" 
+                  className="flex items-center cursor-pointer"
+                  aria-label="Access Trusted Contact Center"
+                >
+                  <ShieldCheck className="w-4 h-4 mr-3 text-green-600" />
+                  <span>Trusted Center</span>
+                </Link>
+              </DropdownMenuItem>
+              
+              
+
               
               <DropdownMenuSeparator />
               

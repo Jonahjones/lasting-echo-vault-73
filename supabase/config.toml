@@ -6,6 +6,9 @@ verify_jwt = false
 [functions.generate-daily-prompts]
 verify_jwt = false
 
+[functions.schedule-daily-prompts]
+verify_jwt = false
+
 [functions.manage-categories]
 verify_jwt = false
 

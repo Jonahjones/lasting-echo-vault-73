@@ -159,7 +159,7 @@ export function PricingProvider({ children }: { children: ReactNode }) {
         {
           id: 'fallback-free',
           tier: 'free',
-          max_videos: 3,
+          max_videos: 5, // Updated from 3 to 5
           max_storage_gb: 2.0,
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString()

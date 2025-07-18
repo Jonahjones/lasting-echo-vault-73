@@ -1,9 +1,11 @@
 import { Link, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Heart, Video, Users, Library, Shield, Inbox } from "lucide-react";
+import { Heart, Video, Users, Library, Shield, Inbox, ShieldCheck, UserCheck } from "lucide-react";
+import { useTrustedContactStatus } from "@/hooks/useTrustedContactStatus";
 
 export function Navigation() {
   const location = useLocation();
+  const { isTrustedContact, isLoading } = useTrustedContactStatus();
   
   const isActive = (path: string) => location.pathname === path;
   
@@ -73,16 +75,33 @@ export function Navigation() {
               </Link>
             </Button>
             
+
+            
+            {/* Trusted Contact Center - Always Available */}
             <Button
-              variant={isActive("/vault") ? "default" : "ghost"}
+              variant={isActive("/trusted-contact-center") ? "default" : "ghost"}
               size="sm"
               asChild
             >
-              <Link to="/vault" className="flex items-center space-x-1">
-                <Shield className="w-4 h-4" />
-                <span>Vault</span>
+              <Link to="/trusted-contact-center" className="flex items-center space-x-1">
+                <ShieldCheck className="w-4 h-4" />
+                <span>Trusted Center</span>
               </Link>
             </Button>
+            
+            {/* Trusted Contact Dashboard - Show relationships where current user is trusted */}
+            {!isLoading && isTrustedContact && (
+              <Button
+                variant={isActive("/trusted-contact-dashboard") ? "default" : "ghost"}
+                size="sm"
+                asChild
+              >
+                <Link to="/trusted-contact-dashboard" className="flex items-center space-x-1">
+                  <UserCheck className="w-4 h-4" />
+                  <span>My Roles</span>
+                </Link>
+              </Button>
+            )}
           </div>
           
           {/* Mobile Menu Button */}

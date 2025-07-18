@@ -139,7 +139,7 @@ export function useGamification() {
 
   // Award XP for an action
   const awardXP = useCallback(async (
-    actionType: 'video_create' | 'video_share' | 'video_public' | 'video_like' | 'referral' | 'video_watch_complete',
+    actionType: 'video_create' | 'video_share' | 'video_public' | 'video_like' | 'referral' | 'video_watch_complete' | 'daily_prompt' | 'additional_prompt',
     referenceId?: string
   ): Promise<XPAwardResult | null> => {
     if (!user) return null;

@@ -1,0 +1,33 @@
+name: Daily Prompt Notifications
+
+on:
+  schedule:
+    # Run every 5 minutes to match the cycling prompt intervals
+    - cron: '*/5 * * * *'
+  workflow_dispatch: # Allow manual triggering
+
+jobs:
+  send-prompt-notifications:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Trigger Daily Prompt Notifications
+        run: |
+          curl -X POST \
+            -H "Content-Type: application/json" \
+            -H "Authorization: Bearer ${{ secrets.SUPABASE_ANON_KEY }}" \
+            "${{ secrets.SUPABASE_URL }}/functions/v1/generate-daily-prompts" \
+            --max-time 30 \
+            --retry 3 \
+            --retry-delay 5
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+
+      - name: Log Success
+        if: success()
+        run: echo "✅ Daily prompt notifications sent successfully at $(date)"
+        
+      - name: Log Failure
+        if: failure()
+        run: echo "❌ Failed to send daily prompt notifications at $(date)" 

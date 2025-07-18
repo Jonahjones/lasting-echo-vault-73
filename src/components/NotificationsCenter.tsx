@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Bell, Video, Lightbulb, FileText, Check, X, CheckCheck } from "lucide-react";
+import { Bell, Video, Lightbulb, FileText, Check, X, CheckCheck, Shield } from "lucide-react";
 import { useNotifications, Notification } from "@/contexts/NotificationsContext";
 import { useNavigate } from "react-router-dom";
 import { format, formatDistanceToNow } from "date-fns";
@@ -28,6 +28,8 @@ export function NotificationsCenter({ isOpen, onClose }: NotificationsCenterProp
         return <FileText className="w-5 h-5 text-blue-500" />;
       case 'delivery_confirmation':
         return <Check className="w-5 h-5 text-green-500" />;
+      case 'trusted_contact_added':
+        return <Shield className="w-5 h-5 text-purple-500" />;
       default:
         return <Bell className="w-5 h-5 text-muted-foreground" />;
     }
@@ -75,6 +77,9 @@ export function NotificationsCenter({ isOpen, onClose }: NotificationsCenterProp
         if (notification.data?.video_id) {
           navigate(`/video-details?id=${notification.data.video_id}`);
         }
+        break;
+      case 'trusted_contact_added':
+        navigate('/trusted-contact-center');
         break;
     }
 
